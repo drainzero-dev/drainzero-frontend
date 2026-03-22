@@ -45,7 +45,7 @@ const LandingPage = () => {
       <div style={{ backgroundColor: '#F2F3F4', color: '#1F2937', overflowX: 'hidden' }}>
 
         {/* ── Navbar ── */}
-        <nav style={{ background: '#FFFFFF', padding: '0 40px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 0 #E5E7EB', position: 'sticky', top: 0, zIndex: 100 }}>
+        <nav style={{ background: '#FFFFFF', padding: '0 16px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 0 #E5E7EB', position: 'sticky', top: 0, zIndex: 100 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <img src="/DRAINZERO-LOGO.png" alt="DrainZero" style={{ height: 36, width: 'auto' }}
               onError={(e) => { e.target.style.display = 'none'; }}
@@ -54,9 +54,9 @@ const LandingPage = () => {
               Drain<span style={{ color: '#5B92E5' }}>Zero</span>
             </span>
           </div>
-          <Space size={12}>
-            <Button onClick={() => navigate('/login')} style={{ height: 40, borderRadius: 10, color: '#08457E', borderColor: '#B8C8E6' }}>Login</Button>
-            <Button type="primary" onClick={() => navigate('/signup')} style={{ height: 40, borderRadius: 10, background: '#08457E', border: 'none' }}>Get Started Free</Button>
+            <Space size={8}>
+            <Button onClick={() => navigate('/login')} style={{ height: 36, borderRadius: 10, color: '#08457E', borderColor: '#B8C8E6', fontSize: 13 }}>Login</Button>
+            <Button type="primary" onClick={() => navigate('/signup')} style={{ height: 36, borderRadius: 10, background: '#08457E', border: 'none', fontSize: 13 }}>Get Started Free</Button>
           </Space>
         </nav>
 
