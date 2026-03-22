@@ -54,8 +54,50 @@ const TaxReport = () => {
 
   const today   = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
 
+  const [downloading, setDownloading] = useState(false);
+
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      setDownloading(true);
+      message.loading({ content: 'Generating PDF...', key: 'pdf', duration: 0 });
+      
+      const { default: html2canvas } = await import('html2canvas');
+      const { default: jsPDF }       = await import('jspdf');
+
+      const element = printRef.current;
+      const canvas  = await html2canvas(element, {
+        scale      : 2,
+        useCORS    : true,
+        logging    : false,
+        windowWidth: 800,
+      });
+
+      const imgData  = canvas.toDataURL('image/png');
+      const pdf      = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight= (canvas.height * pdfWidth) / canvas.width;
+
+      let y = 0;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      while (y < pdfHeight) {
+        if (y > 0) pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, -y, pdfWidth, pdfHeight);
+        y += pageHeight;
+      }
+
+      pdf.save('DrainZero_Tax_Report.pdf');
+      message.success({ content: 'PDF downloaded!', key: 'pdf', duration: 2 });
+    } catch (err) {
+      message.error({ content: 'PDF generation failed. Try print instead.', key: 'pdf', duration: 3 });
+      console.error(err);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const fmt = (n) => `₹${Math.round(n || 0).toLocaleString('en-IN')}`;
@@ -78,11 +120,15 @@ const TaxReport = () => {
       {/* Print button — hidden when printing */}
       <div className="no-print" style={{ background: '#F2F3F4', padding: '16px 24px', display: 'flex', gap: 12, alignItems: 'center', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid #E5E7EB' }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)} style={{ borderRadius: 10 }}>Back</Button>
-        <Button type="primary" icon={<PrinterOutlined />} onClick={handlePrint}
+        <Button type="primary" icon={<DownloadOutlined />} onClick={handleDownloadPDF}
+          loading={downloading}
           style={{ borderRadius: 10, background: '#08457E', border: 'none', fontWeight: 600 }}>
-          Download PDF / Print
+          Download PDF
         </Button>
-        <span style={{ color: '#6B7280', fontSize: 13 }}>Opens browser print dialog — save as PDF</span>
+        <Button icon={<PrinterOutlined />} onClick={handlePrint}
+          style={{ borderRadius: 10, color: '#08457E', borderColor: '#B8C8E6' }}>
+          Print
+        </Button>
       </div>
 
       {/* ── PRINTABLE REPORT ── */}
