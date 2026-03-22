@@ -243,8 +243,8 @@ const OnboardingPage = () => {
         Card: { paddingLG: 40, borderRadiusLG: 24 }
       }
     }}>
-      <Layout style={{ minHeight: '100vh', background: '#DCE6F5', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-        <div style={{ maxWidth: 560, width: '100%' }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #DCE6F5 0%, #EEF3FA 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+        <div style={{ maxWidth: 560, width: '100%', boxSizing: 'border-box' }}>
 
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
@@ -310,7 +310,7 @@ const OnboardingPage = () => {
           </div>
 
         </div>
-      </Layout>
+      </div>
     </ConfigProvider>
   );
 };
