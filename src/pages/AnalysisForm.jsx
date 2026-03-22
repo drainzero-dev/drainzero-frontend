@@ -1174,7 +1174,7 @@ const AnalysisForm = ({
             <Layout style={{ minHeight: '100vh', background: '#F2F3F4' }}>
           <Navbar />
           <div style={{ padding: '32px 24px' }}>
-                <Content style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+                <Content style={{ maxWidth: '900px', margin: '0 auto', width: '100%', padding: '24px 16px' }}>
                     {/* Page Header */}
                     <div style={{ marginBottom: '32px' }}>
                         <Button

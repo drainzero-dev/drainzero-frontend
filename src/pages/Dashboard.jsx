@@ -63,7 +63,7 @@ const Dashboard = () => {
       <Layout style={{ minHeight: '100vh', background: '#F2F3F4' }}>
           <Navbar />
           <div style={{ padding: '32px 24px' }}>
-        <Content style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+        <Content style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '24px 16px' }}>
 
           {/* Header */}
           <div style={{ marginBottom: 48, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 }}>

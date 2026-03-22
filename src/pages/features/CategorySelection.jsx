@@ -148,8 +148,8 @@ const CategorySelection = () => {
         >
             <Layout style={{ minHeight: '100vh', background: '#F2F3F4' }}>
           <Navbar />
-          <div style={{ padding: '40px 24px' }}>
-                <Content style={{ maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+          <div style={{ padding: '24px 16px' }}>
+                <Content style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', padding: '24px 16px' }}>
                     {/* Header */}
                     <div style={{ marginBottom: '64px', textAlign: 'center' }}>
                         <Title level={1} style={{ color: '#5B92E5', marginBottom: '12px', fontWeight: 800, fontSize: '3rem' }}>

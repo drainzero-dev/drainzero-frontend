@@ -278,7 +278,7 @@ const LoopholesPage = () => {
       <Layout style={{ minHeight: '100vh', background: '#F2F3F4' }}>
           <Navbar />
           <div style={{ padding: '32px 24px' }}>
-        <Content style={{ maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+        <Content style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', padding: '24px 16px' }}>
 
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/dashboard', { state: location.state })}
             style={{ marginBottom: 24, borderRadius: 12, fontWeight: 600, color: '#08457E' }}>

@@ -1,81 +1,117 @@
 @import './theme.css';
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
 
 body {
   background-color: #F2F3F4;
   color: #1F2937;
   font-family: 'Outfit', sans-serif;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #F2F3F4; }
 ::-webkit-scrollbar-thumb { background: #B8C8E6; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #5B92E5; }
 
-/* ── Mobile Fixes ── */
+/* ── Ant Design Mobile Overrides ── */
+.ant-layout {
+  background: #F2F3F4 !important;
+}
+
+/* Prevent Ant Layout from breaking on mobile */
+.ant-layout-content {
+  min-width: 0 !important;
+}
+
+/* ── Global Mobile Fixes ── */
 @media (max-width: 768px) {
-
-  /* Ant Layout padding fix */
-  .ant-layout { padding: 16px 12px !important; }
+  /* Page padding */
+  .ant-layout { padding: 0 !important; }
+  .ant-layout-content { padding: 16px !important; }
 
   /* Cards */
-  .ant-card-body { padding: 20px 16px !important; }
+  .ant-card { border-radius: 16px !important; }
+  .ant-card-body { padding: 16px !important; }
+
+  /* Tables — horizontal scroll */
+  .ant-table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ant-table { min-width: 500px; }
 
   /* Typography */
-  .ant-typography h1 { font-size: 1.8rem !important; }
-  .ant-typography h2 { font-size: 1.4rem !important; }
+  h1.ant-typography, .ant-typography h1 { font-size: 1.8rem !important; }
+  h2.ant-typography, .ant-typography h2 { font-size: 1.4rem !important; }
+  h3.ant-typography, .ant-typography h3 { font-size: 1.1rem !important; }
 
-  /* Tables scroll on mobile */
-  .ant-table-wrapper { overflow-x: auto; }
-
-  /* Buttons full width on mobile */
-  .mobile-full { width: 100% !important; }
-
+  /* Buttons */
+  .ant-btn-lg { height: 44px !important; }
+  
   /* Form items */
-  .ant-form-item { margin-bottom: 16px !important; }
+  .ant-form-item { margin-bottom: 14px !important; }
+  .ant-form-item-label { padding-bottom: 4px !important; }
 
-  /* Radio groups wrap */
-  .ant-radio-group { flex-wrap: wrap !important; }
-  .ant-radio-button-wrapper { margin-bottom: 8px; }
+  /* Radio buttons wrap on mobile */
+  .ant-radio-group {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .ant-radio-button-wrapper {
+    border-radius: 8px !important;
+    flex: 0 0 auto !important;
+  }
+  .ant-radio-button-wrapper:not(:first-child)::before { display: none !important; }
+
+  /* Select full width */
+  .ant-select { width: 100% !important; }
+
+  /* Input full width */
+  .ant-input, .ant-input-number { width: 100% !important; }
 
   /* Space wrap */
   .ant-space { flex-wrap: wrap !important; }
 
-  /* Dashboard cards */
-  .feature-card { padding: 24px 20px !important; }
+  /* Steps vertical */
+  .ant-steps-horizontal { flex-direction: column !important; }
 
-  /* Collapse panels */
-  .ant-collapse-header { padding: 14px 16px !important; }
-  .ant-collapse-content-box { padding: 0 16px 12px !important; }
+  /* Statistic value size */
+  .ant-statistic-content-value { font-size: 1.3rem !important; }
 
-  /* Stats grid */
-  .ant-statistic-content-value { font-size: 1.4rem !important; }
+  /* Collapse */
+  .ant-collapse-header { padding: 12px 16px !important; }
 
-  /* Input number width */
-  .ant-input-number { width: 100% !important; }
-
-  /* Select width */
-  .ant-select { width: 100% !important; }
-
-  /* Steps mobile */
-  .ant-steps { flex-direction: column !important; }
-  .ant-steps-item { flex: none !important; }
+  /* Tabs */
+  .ant-tabs-nav { overflow-x: auto !important; }
+  .ant-tabs-tab { padding: 8px 12px !important; }
 }
 
 @media (max-width: 480px) {
-  .ant-layout { padding: 12px 8px !important; }
-  .ant-card-body { padding: 16px 12px !important; }
-  .ant-typography h1 { font-size: 1.5rem !important; }
-  .ant-typography h2 { font-size: 1.2rem !important; }
+  /* Extra small screens */
+  .ant-card-body { padding: 12px !important; }
+  h1.ant-typography, .ant-typography h1 { font-size: 1.5rem !important; }
+  h2.ant-typography, .ant-typography h2 { font-size: 1.2rem !important; }
+
+  /* Make rows stack on very small screens */
+  .ant-row { flex-direction: column !important; }
+  .ant-col { max-width: 100% !important; flex: 0 0 100% !important; }
 }
 
-/* ── Print Styles ── */
+/* ── Print styles ── */
 @media print {
   .no-print { display: none !important; }
   body { background: #fff !important; }
-  @page { margin: 15mm; size: A4; }
+  @page { margin: 12mm; size: A4; }
 }
