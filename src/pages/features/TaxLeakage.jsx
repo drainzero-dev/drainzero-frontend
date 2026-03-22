@@ -1,6 +1,6 @@
 import React from 'react';
-import { Layout, Typography, Card, Row, Col, Space, Button, List, Tag, Statistic, ConfigProvider } from 'antd';
-import { ArrowLeftOutlined, WarningOutlined, InfoCircleFilled } from '@ant-design/icons';
+import { Layout, Typography, Card, Row, Col, Space, Button, Tag, Progress, ConfigProvider, Alert } from 'antd';
+import { ArrowLeftOutlined, WarningOutlined, InfoCircleFilled, CheckCircleFilled } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import TaxAssistantChatbot from '../../components/TaxAssistantChatbot';
@@ -9,278 +9,218 @@ const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
 const TaxLeakage = () => {
-    const location = useLocation();
-    const navigate = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    if (!location.state) {
-        return (
-            <div style={{ padding: '40px', textAlign: 'center' }}>
-                <Title level={2}>Tax Leakage Detection</Title>
-                <div style={{ padding: '60px', background: '#fff', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-                    <p>Analysis data not available. Please enter your details first.</p>
-                    <Button type="primary" onClick={() => navigate('/category-selection')}>Begin Analysis</Button>
-                </div>
-            </div>
-        );
-    }
-
-    const { category, subcategory, ownership, formData, backendResult } = location.state || {};
-
-    // Use backend leakage gaps if available, else compute locally
-    const backendGaps = backendResult?.leakageGaps || [];
-    const backendTotalLeakage = backendResult?.totalLeakage || 0;
-    
-    const missed80C = Math.max(0, 150000 - (formData?.deduction80C || 0));
-    const slabRate = (formData?.annualSalary || 0) > 1500000 ? 0.30 : 0.20;
-
-    let leakageItems = [];
-    let totalLeakage = 0;
-    
-    // If backend gave us real leakage gaps, use those instead
-    if (backendGaps.length > 0) {
-        leakageItems = backendGaps.map(g => ({
-            title: g.label || g.section || 'Tax Saving Opportunity',
-            description: g.description || `Utilize this deduction to reduce your tax liability.`,
-            potential: g.taxSaved || 0,
-            tag: g.section || 'Deduction'
-        }));
-        totalLeakage = backendTotalLeakage;
-    }
-
-    // Local computation fallback when no backend data
-    if (backendGaps.length === 0) {
-    // 1. 80C Leakage
-    if (missed80C > 1000) {
-        const potentialSave = missed80C * slabRate;
-        leakageItems.push({
-            title: 'Unused 80C Limit',
-            description: `You have ₹${missed80C.toLocaleString()} left in your Section 80C limit (LIC, PPF, ELSS, etc).`,
-            potential: potentialSave,
-            tag: 'Investment'
-        });
-        totalLeakage += potentialSave;
-    }
-
-    // 2. NPS Leakage (80CCD 1B - extra 50k)
-    const currentNPS = formData?.deductionNPS || 0;
-    const missedNPS = Math.max(0, 50000 - currentNPS);
-    if (missedNPS > 1000) {
-        const potentialSave = missedNPS * slabRate;
-        leakageItems.push({
-            title: 'NPS Extra Benefit (80CCD 1B)',
-            description: `You are missing out on the additional ₹50,000 deduction available only for NPS contributions.`,
-            potential: potentialSave,
-            tag: 'Retirement'
-        });
-        totalLeakage += potentialSave;
-    }
-
-    // 3. 80D Leakage
-    const currentClaimed80D = formData?.deduction80D || 0;
-    const premiumAmount = formData?.premiumAmount || 0;
-    const coverageType = formData?.coverageType || '';
-    const limit80D = (formData?.hasSeniorCitizen === 'yes' || coverageType === 'Senior Parents') ? 50000 : 25000;
-    const potential80DValue = Math.min(premiumAmount + (formData?.preventiveCheckup || 0), limit80D);
-    const missed80D = Math.max(0, potential80DValue - currentClaimed80D);
-
-    if (missed80D > 1000) {
-        const potentialSave = missed80D * slabRate;
-        leakageItems.push({
-            title: 'Health Insurance (80D) Leakage',
-            description: `Claiming ₹${missed80D.toLocaleString()} more in Section 80D (Health Premiums + Preventive Checkups) can reduce tax.`,
-            potential: potentialSave,
-            tag: 'Health'
-        });
-        totalLeakage += potentialSave;
-    }
-
-    // 4. Vehicle Module Leakage
-    if (category === 'Vehicle') {
-        // EV Benefit
-        if (formData.fuelType === 'Electric' && !formData.loanInterestPaid) {
-            leakageItems.push({
-                title: 'EV 80EEB Benefit Missed',
-                description: `Electric vehicles qualify for ₹1.5L interest deduction. You are using personal capital instead of tax-efficient debt.`,
-                potential: 150000 * slabRate,
-                tag: 'EV Benefit'
-            });
-            totalLeakage += 150000 * slabRate;
-        }
-
-        // Business Usage Depreciation
-        if (formData.usageType === 'Business' && formData.employmentType === 'Self-Employed' && (formData.businessUsagePercentage || 100) < 100) {
-            leakageItems.push({
-                title: 'Under-utilized Business Depreciation',
-                description: `You have logged less than 100% business usage. Increasing this to actual usage can shield more income via depreciation.`,
-                potential: 15000,
-                tag: 'Business'
-            });
-            totalLeakage += 15000;
-        }
-
-        // Salary Optimization (Salaried)
-        if (formData.employmentType === 'Salaried' && !formData.fuelReimbursement) {
-            leakageItems.push({
-                title: 'Salary Structure Not Optimized',
-                description: `Fuel, Maintenance and Driver salary reimbursements are tax-free. Your current structure taxes these as pure salary.`,
-                potential: 36000,
-                tag: 'Salary Struct'
-            });
-            totalLeakage += 36000;
-        }
-    }
-
-    // 5. Stocks & F&O Leakage
-    if (category === 'Stocks' || category === 'Investments') {
-        if (formData.assetType === 'F&O Trading' && formData.numTrades > 50 && !formData.brokerage) {
-            leakageItems.push({
-                title: 'Missing F&O Business Expenses',
-                description: `F&O is a business. You haven't claimed brokerage, internet, or advisory costs which could reduce taxable profit.`,
-                potential: 10000,
-                tag: 'Business'
-            });
-            totalLeakage += 10000;
-        }
-        
-        if (formData.hasCapitalLoss === 'yes' && !formData.lossCarryForward) {
-             leakageItems.push({
-                title: 'Unclaimed Loss Carry Forward',
-                description: `Previous capital losses can offset current gains. You haven't utilized your 8-year carry forward window.`,
-                potential: 5000,
-                tag: 'Capital Gains'
-            });
-            totalLeakage += 5000;
-        }
-    }
-
-    // 6. Property Leakage
-    if (category === 'Land' || category === 'Property') {
-        if (formData.propertyOwnershipType === 'Self-occupied' && !formData.loanInterestPaid) {
-            leakageItems.push({
-                title: 'Missing Home Loan Interest (24b)',
-                description: `You are missing out on up to ₹2,00,000 deduction on home loan interest for self-occupied property.`,
-                potential: 200000 * slabRate,
-                tag: 'Property'
-            });
-            totalLeakage += 200000 * slabRate;
-        }
-
-        if (formData.propertyOwnershipType === 'Let-out' && !formData.municipalTaxes) {
-            leakageItems.push({
-                title: 'Missing Municipal Tax Deduction',
-                description: `Municipal taxes are deductible from rental income before applying the 30% standard deduction.`,
-                potential: 3000,
-                tag: 'Rental'
-            });
-            totalLeakage += 3000;
-        }
-    }
-
+  if (!location.state) {
     return (
-        <ConfigProvider
-            theme={{
-                token: {
-                    colorPrimary: '#5B92E5',
-                    borderRadius: 20,
-                    fontFamily: "'Outfit', sans-serif",
-                },
-            }}
-        >
-            <Layout style={{ minHeight: '100vh', background: '#F2F3F4' }}>
-          <Navbar />
-          <div style={{ padding: '32px 24px' }}>
-                <Content style={{ maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '24px 16px' }}>
-                    <Button
-                        icon={<ArrowLeftOutlined />}
-                        onClick={() => navigate('/dashboard', { state: location.state })}
-                        style={{ marginBottom: '24px', borderRadius: '12px', fontWeight: 600, color: '#5B92E5' }}
-                    >
-                        Back to Dashboard
-                    </Button>
-
-                    <Title level={2} style={{ color: '#5B92E5', fontWeight: 800 }}>
-                        Tax Leakage Detection
-                    </Title>
-                    <Paragraph style={{ color: '#6B7280', fontSize: '16px', marginBottom: '40px' }}>
-                        Identifying efficiency gaps where you are paying more tax than legally necessary.
-                    </Paragraph>
-
-                    <Row gutter={[24, 24]} style={{ marginBottom: '40px' }}>
-                        <Col span={24}>
-                            <Card
-                                style={{ borderRadius: '24px', background: '#EF444408', border: '1px solid #FCA5A5' }}
-                                bodyStyle={{ padding: '40px' }}
-                            >
-                                <Row align="middle" gutter={24}>
-                                    <Col xs={24} md={12}>
-                                        <Space direction="vertical" size={12}>
-                                            <Tag color="red" style={{ fontWeight: 700, borderRadius: '4px' }} icon={<WarningOutlined />}>HIGH LEAKAGE FOUND</Tag>
-                                            <Title level={1} style={{ margin: 0, color: '#5B92E5', fontWeight: 800 }}>
-                                                ₹{totalLeakage.toLocaleString()}
-                                            </Title>
-                                            <Text style={{ fontSize: '18px', color: '#4B5563' }}>Total Estimated Annual Tax Leakage</Text>
-                                        </Space>
-                                    </Col>
-                                    <Col xs={24} md={12} style={{ textAlign: 'right' }}>
-                                        <div style={{ padding: '24px', background: '#FFFFFF', borderRadius: '20px', display: 'inline-block', minWidth: '240px', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.05)' }}>
-                                            <Statistic title={<span style={{ color: '#5B92E5' }}>Estimated Tax Leakage</span>} value={Math.round(totalLeakage)} prefix="₹" valueStyle={{ color: '#EF4444', fontWeight: 800 }} />
-                                        </div>
-                                    </Col>
-                                </Row>
-                            </Card>
-                        </Col>
-                    </Row>
-
-                    <Card
-                        title={<Space><InfoCircleFilled style={{ color: '#5B92E5' }} /> <span>Leakage Breakdown</span></Space>}
-                        style={{ borderRadius: '24px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}
-                    >
-                        <List
-                            itemLayout="horizontal"
-                            dataSource={leakageItems}
-                            renderItem={(item) => (
-                                <List.Item style={{ padding: '24px 0' }} extra={
-                                    <Statistic
-                                        value={item.potential}
-                                        prefix="₹"
-                                        valueStyle={{ fontSize: '18px', color: '#EF4444', fontWeight: 700 }}
-                                        title={<span style={{ fontSize: '12px' }}>Potential Savings</span>}
-                                    />
-                                }>
-                                    <List.Item.Meta
-                                        title={<Space><Text strong style={{ fontSize: '18px', color: '#5B92E5' }}>{item.title}</Text><Tag color="orange" style={{ borderRadius: '4px' }}>{item.tag}</Tag></Space>}
-                                        description={<Text style={{ fontSize: '15px', color: '#6B7280' }}>{item.description}</Text>}
-                                    />
-                                </List.Item>
-                            )}
-                        />
-
-                        <div style={{ marginTop: '32px', textAlign: 'center' }}>
-                            <Button
-                                type="primary"
-                                size="large"
-                                style={{ borderRadius: '50px', height: '52px', padding: '0 40px', fontWeight: 700 }}
-                                onClick={() => navigate('/feature/recommendations', { state: location.state })}
-                            >
-                                Get Fix Recommendations <ArrowLeftOutlined style={{ rotate: '180deg', marginLeft: '8px' }} />
-                            </Button>
-                        </div>
-                    </Card>
-
-                    <div style={{ marginTop: '40px' }}>
-                        <TaxAssistantChatbot />
-                    </div>
-
-                    <style>
-                        {`
-                            .ant-list-item-meta-title { margin-bottom: 8px !important; }
-                        `}
-                    </style>
-                </Content>
-            </div>
-</Layout>
-        </ConfigProvider>
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <Title level={2}>Tax Leakage Detection</Title>
+        <div style={{ padding: '60px', background: '#fff', borderRadius: '24px' }}>
+          <p>Analysis data not available. Please complete the analysis form first.</p>
+          <Button type="primary" onClick={() => navigate('/category-selection')}>
+            Start Analysis
+          </Button>
+        </div>
+      </div>
     );
+  }
+
+  const { category, subcategory, ownership, formData, backendResult } = location.state || {};
+  const salary    = formData?.annualSalary || 0;
+  const slabRate  = salary > 1500000 ? 0.30 : salary > 1000000 ? 0.20 : salary > 500000 ? 0.10 : 0.05;
+  const fmt       = (n) => `₹${Math.round(n || 0).toLocaleString('en-IN')}`;
+
+  // Use backend leakage gaps if available, else compute locally
+  let leakageGaps = [];
+  let totalLeakage = 0;
+
+  if (backendResult?.leakageGaps?.length > 0) {
+    leakageGaps  = backendResult.leakageGaps;
+    totalLeakage = backendResult.totalLeakage || leakageGaps.reduce((a, g) => a + (g.taxSaved || 0), 0);
+  } else {
+    // Compute locally from form data
+    const d80C = formData?.deduction80C || 0;
+    const dNPS = formData?.deductionNPS || 0;
+    const d80D = formData?.deduction80D || 0;
+    const dHRA = formData?.hraDeduction || 0;
+
+    if (d80C < 150000) {
+      const missed = 150000 - d80C;
+      leakageGaps.push({ label: 'Section 80C Gap', description: `You have ₹${missed.toLocaleString('en-IN')} unused in 80C limit. Invest in PPF, ELSS, or LIC.`, taxSaved: Math.round(missed * slabRate), severity: 'high' });
+    }
+    if (dNPS < 50000) {
+      const missed = 50000 - dNPS;
+      leakageGaps.push({ label: 'NPS 80CCD(1B) Gap', description: `₹${missed.toLocaleString('en-IN')} more in NPS gives exclusive deduction beyond 80C.`, taxSaved: Math.round(missed * slabRate), severity: 'high' });
+    }
+    if (d80D < 25000) {
+      const missed = 25000 - d80D;
+      leakageGaps.push({ label: 'Health Insurance 80D Gap', description: `Get health insurance to claim up to ₹25,000 deduction.`, taxSaved: Math.round(missed * slabRate), severity: 'medium' });
+    }
+    if (dHRA === 0 && salary > 0) {
+      leakageGaps.push({ label: 'HRA Not Claimed', description: 'If you pay rent, submit rent receipts to claim HRA exemption.', taxSaved: Math.round(salary * 0.10 * slabRate), severity: 'medium' });
+    }
+    if (category === 'Vehicle' && formData?.fuelType === 'Electric') {
+      leakageGaps.push({ label: 'EV Loan 80EEB Not Claimed', description: 'EV loan interest up to ₹1.5L is deductible under Section 80EEB.', taxSaved: Math.round(150000 * slabRate), severity: 'medium' });
+    }
+    if (category === 'Stocks' && formData?.assetType === 'Crypto') {
+      leakageGaps.push({ label: 'Crypto Tax Risk', description: 'Crypto is taxed at flat 30% with no loss set-off allowed.', taxSaved: 0, severity: 'warning' });
+    }
+    if (salary > 700000) {
+      leakageGaps.push({ label: 'LTCG Harvesting Not Used', description: 'You can harvest up to ₹1.25L of equity LTCG tax-free every year.', taxSaved: Math.round(125000 * 0.10), severity: 'low' });
+    }
+    totalLeakage = leakageGaps.reduce((a, g) => a + (g.taxSaved || 0), 0);
+  }
+
+  const severityColor = (s) => {
+    if (s === 'high')    return '#EF4444';
+    if (s === 'medium')  return '#F59E0B';
+    if (s === 'warning') return '#DC2626';
+    return '#5B92E5';
+  };
+
+  const severityLabel = (s) => {
+    if (s === 'high')    return 'High Impact';
+    if (s === 'medium')  return 'Medium Impact';
+    if (s === 'warning') return 'Risk';
+    return 'Low Impact';
+  };
+
+  return (
+    <ConfigProvider theme={{ token: { colorPrimary: '#5B92E5', borderRadius: 16, fontFamily: "'Outfit', sans-serif" } }}>
+      <Layout style={{ minHeight: '100vh', background: '#F2F3F4' }}>
+        <Navbar />
+        <div style={{ padding: '24px 16px' }}>
+          <Content style={{ maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
+
+            <Button icon={<ArrowLeftOutlined />}
+              onClick={() => navigate('/dashboard', { state: location.state })}
+              style={{ marginBottom: 24, borderRadius: 12, fontWeight: 600, color: '#5B92E5' }}>
+              Back to Dashboard
+            </Button>
+
+            <Title level={2} style={{ color: '#08457E', fontWeight: 800, marginBottom: 8 }}>
+              Tax Leakage Detection
+            </Title>
+            <Paragraph style={{ color: '#6B7280', fontSize: 16, marginBottom: 32 }}>
+              Money you are legally entitled to save but currently losing.
+            </Paragraph>
+
+            {salary === 0 && (
+              <Alert
+                message="Enter your annual salary in the analysis form for personalized leakage detection."
+                type="info" showIcon style={{ marginBottom: 24, borderRadius: 12 }}
+              />
+            )}
+
+            {/* Summary */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
+              <Col xs={24} sm={12} md={8}>
+                <Card style={{ borderRadius: 20, border: 'none', background: '#FEF2F2', textAlign: 'center' }}>
+                  <div style={{ fontSize: 11, color: '#EF4444', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Total Tax Leakage</div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: '#EF4444' }}>{fmt(totalLeakage)}</div>
+                  <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>per year you're overpaying</div>
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Card style={{ borderRadius: 20, border: 'none', background: '#FFF7ED', textAlign: 'center' }}>
+                  <div style={{ fontSize: 11, color: '#F59E0B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Gaps Found</div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: '#D97706' }}>{leakageGaps.length}</div>
+                  <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>areas to optimize</div>
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Card style={{ borderRadius: 20, border: 'none', background: '#F0FDF4', textAlign: 'center' }}>
+                  <div style={{ fontSize: 11, color: '#10B981', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Potential Saving</div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: '#059669' }}>{fmt(totalLeakage)}</div>
+                  <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>if all gaps are closed</div>
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Leakage Gaps */}
+            {leakageGaps.length === 0 ? (
+              <Card style={{ borderRadius: 20, border: 'none', textAlign: 'center', padding: '40px 20px' }}>
+                <CheckCircleFilled style={{ fontSize: 48, color: '#10B981', marginBottom: 16 }} />
+                <Title level={4} style={{ color: '#059669' }}>No Leakage Detected!</Title>
+                <Paragraph style={{ color: '#6B7280' }}>
+                  Your tax planning appears optimized. Complete the full analysis to get deeper insights.
+                </Paragraph>
+              </Card>
+            ) : (
+              <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                {leakageGaps.map((gap, i) => (
+                  <Card key={i} style={{
+                    borderRadius: 20, border: 'none',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+                    borderLeft: `4px solid ${severityColor(gap.severity || 'medium')}`
+                  }}>
+                    <Row gutter={[16, 16]} align="middle">
+                      <Col xs={24} md={16}>
+                        <Space size={12} align="start">
+                          <WarningOutlined style={{ color: severityColor(gap.severity || 'medium'), fontSize: 20, marginTop: 2, flexShrink: 0 }} />
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                              <Text strong style={{ color: '#08457E', fontSize: 16 }}>
+                                {gap.label || gap.section}
+                              </Text>
+                              <Tag style={{ borderRadius: 20, fontSize: 11, background: severityColor(gap.severity || 'medium') + '20', color: severityColor(gap.severity || 'medium'), border: 'none' }}>
+                                {severityLabel(gap.severity || 'medium')}
+                              </Tag>
+                            </div>
+                            <Paragraph style={{ color: '#6B7280', margin: 0, fontSize: 14, lineHeight: 1.6 }}>
+                              {gap.description || `Utilize this section to reduce your tax burden.`}
+                            </Paragraph>
+                          </div>
+                        </Space>
+                      </Col>
+                      <Col xs={24} md={8} style={{ textAlign: 'right' }}>
+                        {gap.taxSaved > 0 && (
+                          <div>
+                            <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>POTENTIAL SAVING</div>
+                            <div style={{ fontSize: 24, fontWeight: 800, color: '#10B981' }}>
+                              {fmt(gap.taxSaved)}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#9CA3AF' }}>per year</div>
+                          </div>
+                        )}
+                      </Col>
+                    </Row>
+                  </Card>
+                ))}
+              </Space>
+            )}
+
+            {/* Progress bar */}
+            {leakageGaps.length > 0 && totalLeakage > 0 && (
+              <Card style={{ borderRadius: 20, border: 'none', marginTop: 24, background: '#08457E' }}>
+                <Title level={5} style={{ color: '#FFFFFF', marginBottom: 16 }}>
+                  Optimization Roadmap
+                </Title>
+                <div style={{ color: '#CCF1FF', fontSize: 14, marginBottom: 12 }}>
+                  Closing all gaps could save you <strong style={{ color: '#FFFFFF' }}>{fmt(totalLeakage)}</strong> annually
+                </div>
+                <Progress
+                  percent={Math.min(100, Math.round((totalLeakage / Math.max(salary * 0.05, 1)) * 100))}
+                  strokeColor="#10B981"
+                  trailColor="rgba(255,255,255,0.2)"
+                  showInfo={false}
+                />
+                <div style={{ color: '#CCF1FF', fontSize: 12, marginTop: 8 }}>
+                  {leakageGaps.length} gap{leakageGaps.length > 1 ? 's' : ''} identified · Fix the high impact ones first
+                </div>
+              </Card>
+            )}
+
+            <div style={{ marginTop: 40 }}>
+              <TaxAssistantChatbot />
+            </div>
+
+          </Content>
+        </div>
+      </Layout>
+    </ConfigProvider>
+  );
 };
 
 export default TaxLeakage;
