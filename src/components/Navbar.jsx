@@ -35,11 +35,13 @@ const Navbar = ({ showDashboard = true }) => {
       zIndex: 100,
     }}>
       {/* Logo */}
-      <div
-        onClick={() => navigate('/')}
-        style={{ fontSize: 20, fontWeight: 800, color: '#08457E', cursor: 'pointer', letterSpacing: -0.5 }}
-      >
-        Drain<span style={{ color: '#5B92E5' }}>Zero</span>
+      <div onClick={() => navigate('/')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <img src="/DRAINZERO-LOGO.png" alt="DrainZero" style={{ height: 36, width: 'auto' }}
+          onError={(e) => { e.target.style.display = 'none'; }}
+        />
+        <span style={{ fontSize: 20, fontWeight: 800, color: '#08457E', letterSpacing: -0.5 }}>
+          Drain<span style={{ color: '#5B92E5' }}>Zero</span>
+        </span>
       </div>
 
       {/* Right side */}

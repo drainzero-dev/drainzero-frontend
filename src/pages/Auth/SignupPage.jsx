@@ -35,7 +35,10 @@ const SignupPage = () => {
         <Card style={{ maxWidth: 440, width: '100%', border: 'none', textAlign: 'center' }}>
 
           {/* Logo */}
-          <div style={{ marginBottom: 8 }}>
+          <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+            <img src="/DRAINZERO-LOGO.png" alt="DrainZero" style={{ height: 40, width: 'auto' }}
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
             <div style={{ fontSize: 28, fontWeight: 800, color: '#08457E' }}>
               Drain<span style={{ color: '#5B92E5' }}>Zero</span>
             </div>
