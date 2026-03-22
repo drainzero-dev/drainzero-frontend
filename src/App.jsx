@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import ScrollToTop from './components/ScrollToTop';
+import ScrollToTop    from './components/ScrollToTop';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import LandingPage        from './pages/Landing/LandingPage';
@@ -9,6 +9,7 @@ import SignupPage         from './pages/Auth/SignupPage';
 import AuthCallback       from './pages/Auth/AuthCallback';
 import OnboardingPage     from './pages/Auth/OnboardingPage';
 import Dashboard          from './pages/Dashboard';
+import ProfilePage        from './pages/ProfilePage';
 import CategorySelection  from './pages/features/CategorySelection';
 import AnalysisForm       from './pages/AnalysisForm';
 import TaxHealth          from './pages/features/TaxHealth';
@@ -24,11 +25,10 @@ import DeadlineReminders  from './pages/features/DeadlineReminders';
 import InvestmentGuide    from './pages/features/InvestmentGuide';
 import BenefitsExplorer   from './pages/features/BenefitsExplorer';
 import TaxReport          from './pages/features/TaxReport';
-import ProfilePage        from './pages/ProfilePage';
 
-const PR = ({ children, noOnboarding = false }) => (
-  <ProtectedRoute requireOnboarding={!noOnboarding}>{children}</ProtectedRoute>
-);
+// Shorthand wrappers
+const PR  = ({ children }) => <ProtectedRoute>{children}</ProtectedRoute>;
+const PRN = ({ children }) => <ProtectedRoute requireOnboarding={false}>{children}</ProtectedRoute>;
 
 const App = () => (
   <Router>
@@ -40,13 +40,14 @@ const App = () => (
       <Route path="/signup"         element={<SignupPage />} />
       <Route path="/auth/callback"  element={<AuthCallback />} />
 
-      {/* Onboarding — needs login, no onboarding required */}
-      <Route path="/onboarding"     element={<PR noOnboarding><OnboardingPage /></PR>} />
+      {/* Needs login but not onboarding */}
+      <Route path="/onboarding"     element={<PRN><OnboardingPage /></PRN>} />
 
-      {/* Protected */}
-      <Route path="/dashboard"          element={<PR><Dashboard /></PR>} />
-      <Route path="/category-selection" element={<PR><CategorySelection /></PR>} />
-      <Route path="/analysis"           element={<PR><AnalysisForm /></PR>} />
+      {/* Protected — needs login + onboarding */}
+      <Route path="/dashboard"           element={<PR><Dashboard /></PR>} />
+      <Route path="/profile"             element={<PR><ProfilePage /></PR>} />
+      <Route path="/category-selection"  element={<PR><CategorySelection /></PR>} />
+      <Route path="/analysis"            element={<PR><AnalysisForm /></PR>} />
 
       <Route path="/feature/tax-health"        element={<PR><TaxHealth /></PR>} />
       <Route path="/feature/tax-leakage"       element={<PR><TaxLeakage /></PR>} />
@@ -62,6 +63,7 @@ const App = () => (
       <Route path="/feature/benefits"          element={<PR><BenefitsExplorer /></PR>} />
       <Route path="/feature/report"            element={<PR><TaxReport /></PR>} />
 
+      {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   </Router>

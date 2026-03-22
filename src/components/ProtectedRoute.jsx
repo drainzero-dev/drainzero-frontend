@@ -7,34 +7,34 @@ import { Spin } from 'antd';
 const ProtectedRoute = ({ children, requireOnboarding = true }) => {
   const { user, loading, onboardingDone } = useAuth();
   const location = useLocation();
-  const [sessionState, setSessionState] = useState({ checked: false, hasSession: false, onboardingOk: false });
+  const [directCheck, setDirectCheck] = useState({ done: false, hasSession: false, isOnboarded: false });
 
   useEffect(() => {
+    // Only run once on mount — direct Supabase check as backup
     const check = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          setSessionState({ checked: true, hasSession: false, onboardingOk: false });
+          setDirectCheck({ done: true, hasSession: false, isOnboarded: false });
           return;
         }
-        // Directly check onboarding from DB
         const { data: profile } = await supabase
           .from('users')
           .select('onboarding_done, onboarding_complete')
           .eq('id', session.user.id)
           .maybeSingle();
-
-        const done = !!(profile?.onboarding_done || profile?.onboarding_complete);
-        setSessionState({ checked: true, hasSession: true, onboardingOk: done });
+        const onboarded = !!(profile?.onboarding_done || profile?.onboarding_complete);
+        setDirectCheck({ done: true, hasSession: true, isOnboarded: onboarded });
       } catch {
-        setSessionState({ checked: true, hasSession: false, onboardingOk: false });
+        // On any error assume logged in — better than false logout
+        setDirectCheck({ done: true, hasSession: !!user, isOnboarded: true });
       }
     };
     check();
-  }, [location.pathname]); // re-check on every navigation
+  }, []); // only on mount
 
-  // Show spinner while either context or direct check is loading
-  if (loading || !sessionState.checked) {
+  // Show spinner while loading
+  if (loading || !directCheck.done) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#F2F3F4' }}>
         <Spin size="large" />
@@ -42,14 +42,14 @@ const ProtectedRoute = ({ children, requireOnboarding = true }) => {
     );
   }
 
-  // Not logged in → login
-  const isLoggedIn = !!(user || sessionState.hasSession);
+  // Check login — use context OR direct check
+  const isLoggedIn = !!(user || directCheck.hasSession);
   if (!isLoggedIn) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check onboarding — use EITHER context OR direct DB check
-  const isOnboarded = onboardingDone || sessionState.onboardingOk;
+  // Check onboarding — use context OR direct check
+  const isOnboarded = onboardingDone || directCheck.isOnboarded;
   if (requireOnboarding && !isOnboarded) {
     return <Navigate to="/onboarding" replace />;
   }
