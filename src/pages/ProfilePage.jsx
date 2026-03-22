@@ -7,9 +7,9 @@ import {
   UserOutlined, SaveOutlined, ArrowLeftOutlined, EnvironmentOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../config/supabase';
-import Navbar from '../../components/Navbar';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../config/supabase';
+import Navbar from '../components/Navbar';
 
 const { Title, Text } = Typography;
 
