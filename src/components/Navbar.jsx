@@ -14,9 +14,19 @@ const Navbar = ({ showDashboard = true }) => {
     navigate('/');
   };
 
+  const handleLogoClick = () => {
+    // If logged in go to dashboard, else go to landing page
+    if (user) {
+      navigate('/dashboard', { state: {} });
+    } else {
+      navigate('/');
+    }
+  };
+
   const menuItems = [
     { key: 'dashboard', label: 'Dashboard', icon: <DashboardOutlined />, onClick: () => navigate('/dashboard', { state: location.state }) },
     { key: 'home',      label: 'Home',      icon: <HomeOutlined />,      onClick: () => navigate('/') },
+    { key: 'profile',   label: 'Edit Profile', icon: <UserOutlined />,      onClick: () => navigate('/profile') },
     { type: 'divider' },
     { key: 'logout',    label: 'Logout',    icon: <LogoutOutlined />,    onClick: handleLogout, danger: true },
   ];
@@ -35,7 +45,7 @@ const Navbar = ({ showDashboard = true }) => {
       zIndex: 100,
     }}>
       {/* Logo */}
-      <div onClick={() => navigate('/')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div onClick={handleLogoClick} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
         <img src="/DRAINZERO-LOGO.png" alt="DrainZero" style={{ height: 36, width: 'auto' }}
           onError={(e) => { e.target.style.display = 'none'; }}
         />

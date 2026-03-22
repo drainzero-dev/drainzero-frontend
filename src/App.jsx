@@ -24,6 +24,7 @@ import DeadlineReminders  from './pages/features/DeadlineReminders';
 import InvestmentGuide    from './pages/features/InvestmentGuide';
 import BenefitsExplorer   from './pages/features/BenefitsExplorer';
 import TaxReport          from './pages/features/TaxReport';
+import ProfilePage        from './pages/ProfilePage';
 
 const PR = ({ children, noOnboarding = false }) => (
   <ProtectedRoute requireOnboarding={!noOnboarding}>{children}</ProtectedRoute>
