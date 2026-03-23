@@ -3,8 +3,23 @@ import { supabase } from '../config/supabase';
 
 const AuthContext = createContext(null);
 
+// ── Session timeout: 30 minutes in ms ──
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+const LAST_ACTIVE_KEY    = 'drainzero-last-active';
+
 const getCachedSession = () => {
   try {
+    // Check if session has timed out due to inactivity
+    const lastActive = localStorage.getItem(LAST_ACTIVE_KEY);
+    if (lastActive) {
+      const elapsed = Date.now() - parseInt(lastActive);
+      if (elapsed > SESSION_TIMEOUT_MS) {
+        // Timed out — clear everything
+        localStorage.removeItem(LAST_ACTIVE_KEY);
+        return null;
+      }
+    }
+
     const raw = localStorage.getItem('drainzero-session');
     if (!raw) return null;
     const parsed = JSON.parse(raw);
@@ -33,6 +48,42 @@ export const AuthProvider = ({ children }) => {
   const [onboardingDone, setOnboardingDone] = useState(false);
   const [userProfile,    setUserProfile]    = useState(null);
   const initRef                             = useRef(false);
+  const timeoutRef                          = useRef(null);
+
+  // ── Update last active timestamp on any user interaction ──
+  const updateActivity = () => {
+    localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+    // Reset timeout timer
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      // Auto logout after 30 min inactivity
+      handleAutoLogout();
+    }, SESSION_TIMEOUT_MS);
+  };
+
+  const handleAutoLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem(LAST_ACTIVE_KEY);
+    setUser(null);
+    setOnboardingDone(false);
+    setUserProfile(null);
+  };
+
+  // ── Attach activity listeners ──
+  useEffect(() => {
+    if (!user) return;
+
+    // Set initial activity timestamp
+    updateActivity();
+
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach(e => window.addEventListener(e, updateActivity, { passive: true }));
+
+    return () => {
+      events.forEach(e => window.removeEventListener(e, updateActivity));
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [user]);
 
   const checkOnboarding = async (uid) => {
     try {
@@ -81,9 +132,11 @@ export const AuthProvider = ({ children }) => {
       const u = session?.user ?? null;
       setUser(u);
       if (event === 'SIGNED_IN' && u) {
+        localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
         await checkOnboarding(u.id);
         setLoading(false);
       } else if (event === 'SIGNED_OUT') {
+        localStorage.removeItem(LAST_ACTIVE_KEY);
         setOnboardingDone(false);
         setUserProfile(null);
         setLoading(false);
@@ -97,7 +150,7 @@ export const AuthProvider = ({ children }) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options : {
-        redirectTo  : `${window.location.origin}/auth/callback`, // ✅ fixed
+        redirectTo  : `${window.location.origin}/auth/callback`,
         queryParams : { prompt: 'select_account' },
       }
     });
@@ -105,6 +158,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    localStorage.removeItem(LAST_ACTIVE_KEY);
     await supabase.auth.signOut();
     setUser(null);
     setOnboardingDone(false);

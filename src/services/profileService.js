@@ -1,7 +1,5 @@
 // ─────────────────────────────────────────────
 //  DrainZero — Profile Service
-//  Maps frontend form → Supabase schema
-//  Saves profile + calls backend analyse
 // ─────────────────────────────────────────────
 
 import { supabase } from '../config/supabase';
@@ -9,23 +7,24 @@ import { analyseProfile } from '../config/api';
 
 // ── Map form fields → Supabase income_profile columns ──
 export const mapFormToProfile = (formData, category, subcategory, ownership) => {
-  const salary    = formData.annualSalary     || 0;
-  const basic     = salary * 0.40;  // standard 40% basic
-  const hra       = salary * 0.20;  // standard 20% HRA
+  const salary = formData.annualSalary || 0;
+  const basic  = salary * 0.40;
+  const hra    = salary * 0.20;
 
   return {
     gross_salary          : salary,
     basic_da              : formData.basicSalary || basic,
     hra_received          : hra,
-    bonus                 : formData.bonus             || 0,
+    bonus                 : formData.bonus              || 0,
     other_income          : formData.otherIncome        || 0,
     fd_interest           : 0,
     section_80c           : formData.deduction80C       || 0,
-    section_80d           : formData.deduction80D        || 0,
+    section_80d           : formData.deduction80D       || 0,
     section_80d_parents   : 0,
-    nps_personal          : formData.deductionNPS        || 0,
+    nps_personal          : formData.deductionNPS       || 0,
     education_loan_interest: 0,
     donations_80g         : 0,
+    hra_deduction         : formData.hraDeduction       || 0,
     rent_paid             : formData.hraDeduction
                             ? formData.hraDeduction + (salary * 0.04)
                             : 0,
@@ -62,6 +61,36 @@ export const mapFormToProfile = (formData, category, subcategory, ownership) => 
   };
 };
 
+// ── Map Supabase income_profile → form fields (for pre-filling) ──
+export const mapProfileToForm = (profile) => {
+  if (!profile) return {};
+  return {
+    annualSalary      : profile.gross_salary          || 0,
+    bonus             : profile.bonus                 || 0,
+    otherIncome       : profile.other_income          || 0,
+    deduction80C      : profile.section_80c           || 0,
+    deduction80D      : profile.section_80d           || 0,
+    deductionNPS      : profile.nps_personal          || 0,
+    hraDeduction      : profile.hra_deduction         || profile.hra_received || 0,
+    professionalTax   : profile.professional_tax      || 2500,
+    regimePreference  : profile.preferred_regime      || 'Auto Suggest',
+    // Vehicle
+    purchasePrice     : profile.vehicle_purchase_price || 0,
+    fuelType          : profile.vehicle_fuel_type      || 'Petrol',
+    usageType         : profile.vehicle_usage_type     || 'Personal',
+    hasLoan           : profile.vehicle_has_loan ? 'yes' : 'no',
+    isEmployerProvided: profile.vehicle_is_employer_provided ? 'yes' : 'no',
+    loanInterestPaid  : profile.home_loan_interest     || 0,
+    // Health
+    premiumAmount     : profile.health_premium         || 0,
+    // Property
+    propertyPurchasePrice: profile.property_purchase_price || 0,
+    propertyStatus    : profile.property_status        || null,
+    rentalIncome      : profile.rental_income          || 0,
+    municipalTaxes    : profile.municipal_taxes        || 0,
+  };
+};
+
 // ── Save income profile to Supabase ──
 export const saveIncomeProfile = async (userId, profileData) => {
   const { error } = await supabase
@@ -72,16 +101,13 @@ export const saveIncomeProfile = async (userId, profileData) => {
 
 // ── Full flow: save profile → call backend analyse ──
 export const runFullAnalysis = async (userId, email, formData, category, subcategory, ownership) => {
-  // Map + save income profile
   const profile = mapFormToProfile(formData, category, subcategory, ownership);
   await saveIncomeProfile(userId, profile);
-
-  // Call backend
   const result = await analyseProfile(userId);
   return result;
 };
 
-// ── Get existing income profile from Supabase (for returning users) ──
+// ── Get existing income profile from Supabase ──
 export const getExistingProfile = async (userId) => {
   const { data, error } = await supabase
     .from('income_profile')
