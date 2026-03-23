@@ -283,16 +283,7 @@ const CategorySelection = () => {
                         </div>
                     )}
 
-                    <div style={{ marginTop: '80px', textAlign: 'center' }}>
-                        <Button
-                            type="text"
-                            icon={<ArrowLeftOutlined />}
-                            onClick={() => navigate('/')}
-                            style={{ color: '#5B92E5', fontWeight: 600, fontSize: '16px' }}
-                        >
-                            Back to Landing Page
-                        </Button>
-                    </div>
+                    <div style={{ marginTop: '80px' }} />
 
                     <style>
                         {`

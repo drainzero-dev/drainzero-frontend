@@ -76,10 +76,6 @@ const LandingPage = () => {
               style={{ height: 56, padding: '0 40px', fontSize: 18, background: '#08457E', border: 'none', boxShadow: '0 8px 20px rgba(8,69,126,0.25)' }}>
               Analyze My Taxes Free
             </Button>
-            <Button size="large" onClick={() => navigate('/login')}
-              style={{ height: 56, padding: '0 32px', fontSize: 16, color: '#08457E', borderColor: '#08457E', borderWidth: 2 }}>
-              Login
-            </Button>
           </Space>
           <div style={{ marginTop: 20, fontSize: 13, color: '#9CA3AF' }}>
             No credit card · No CA needed · 100% free to use

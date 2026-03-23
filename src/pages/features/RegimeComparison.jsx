@@ -1,31 +1,34 @@
 import React from 'react';
-import { Layout, Typography, Card, Row, Col, Statistic, Table, Tag, Button, ConfigProvider, Space, Alert } from 'antd';
+import { Layout, Typography, Card, Row, Col, Statistic, Table, Tag, Button, ConfigProvider, Space, Alert, Spin } from 'antd';
 import { ArrowLeftOutlined, CheckCircleFilled, SwapOutlined, InfoCircleOutlined } from '@ant-design/icons';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import dayjs from 'dayjs';
 import TaxAssistantChatbot from '../../components/TaxAssistantChatbot';
+import useProfileData from '../../hooks/useProfileData';
 
 const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
 const RegimeComparison = () => {
-    const location = useLocation();
     const navigate = useNavigate();
+    const { formData, backendResult, dataLoading, category, subcategory, ownership } = useProfileData();
 
-    if (!location.state || !location.state.formData) {
+    if (dataLoading) {
+        return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#F2F3F4' }}><Spin size="large" /></div>;
+    }
+
+    if (!formData) {
         return (
             <div style={{ padding: '40px', textAlign: 'center' }}>
                 <Title level={2}>Regime Comparison</Title>
-                <div style={{ padding: '60px', background: '#fff', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-                    <p>Analysis data not found. Please complete the form first.</p>
+                <div style={{ padding: '60px', background: '#fff', borderRadius: '24px' }}>
+                    <p>Please complete the analysis form first.</p>
                     <Button type="primary" onClick={() => navigate('/category-selection')}>Start New Analysis</Button>
                 </div>
             </div>
         );
     }
-
-    const { category, subcategory, ownership, formData, backendResult } = location.state || {};
 
     // ── If backend result available, use it directly ──
     const hasBackend = backendResult?.success && backendResult?.oldRegime && backendResult?.newRegime;
@@ -201,7 +204,7 @@ const RegimeComparison = () => {
                 <Content style={{ maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '24px 16px' }}>
                     <Button
                         icon={<ArrowLeftOutlined />}
-                        onClick={() => navigate('/dashboard', { state: location.state })}
+                        onClick={() => navigate('/dashboard')}
                         style={{ marginBottom: '24px', borderRadius: '12px', fontWeight: 600, color: '#5B92E5' }}
                     >
                         Back to Dashboard
