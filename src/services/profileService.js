@@ -74,6 +74,8 @@ export const mapProfileToForm = (profile) => {
     hraDeduction      : profile.hra_deduction         || profile.hra_received || 0,
     professionalTax   : profile.professional_tax      || 2500,
     regimePreference  : profile.preferred_regime      || 'Auto Suggest',
+    homeLoanInterest  : profile.home_loan_interest     || 0,
+    otherIncome       : profile.other_income           || 0,
     // Vehicle
     purchasePrice     : profile.vehicle_purchase_price || 0,
     fuelType          : profile.vehicle_fuel_type      || 'Petrol',

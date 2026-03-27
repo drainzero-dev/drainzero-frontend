@@ -14,7 +14,7 @@ import {
     StockOutlined,
     MedicineBoxOutlined,
     HomeOutlined,
-    ArrowRightOutlined,
+    ArrowRightOutlined, ArrowLeftOutlined,
     ArrowLeftOutlined,
     CheckCircleFilled
 } from '@ant-design/icons';
@@ -150,6 +150,15 @@ const CategorySelection = () => {
           <Navbar />
           <div style={{ padding: '24px 16px' }}>
                 <Content style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', padding: '24px 16px' }}>
+                    {/* Back arrow button - issue #4 */}
+                    <Button
+                        icon={<ArrowLeftOutlined />}
+                        type="text"
+                        onClick={() => navigate(-1)}
+                        style={{ color: '#5B92E5', fontWeight: 600, padding: 0, marginBottom: 24, fontSize: 15 }}
+                    >
+                        Back
+                    </Button>
                     {/* Header */}
                     <div style={{ marginBottom: '64px', textAlign: 'center' }}>
                         <Title level={1} style={{ color: '#5B92E5', marginBottom: '12px', fontWeight: 800, fontSize: '3rem' }}>

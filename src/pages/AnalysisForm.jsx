@@ -432,7 +432,7 @@ const AnalysisForm = ({
                                             80D: <strong>₹{(savedProfile.section_80d || 0).toLocaleString('en-IN')}</strong> · 
                                             NPS: <strong>₹{(savedProfile.nps_personal || 0).toLocaleString('en-IN')}</strong>
                                         </span>
-                                        <Button size="small" icon={<EditOutlined />} onClick={() => navigate('/profile')} style={{ borderRadius: 8 }}>
+                                        <Button size="small" icon={<EditOutlined />} onClick={() => navigate('/profile', { state: { from: location.pathname, locationState: location.state } })} style={{ borderRadius: 8 }}>
                                             Edit
                                         </Button>
                                     </Space>
@@ -445,7 +445,7 @@ const AnalysisForm = ({
 
                         {!savedProfile && (
                             <Alert
-                                message={<Space>No income profile found. <Button size="small" onClick={() => navigate('/profile')}>Add Income Details</Button></Space>}
+                                message={<Space>No income profile found. <Button size="small" type="primary" onClick={() => navigate('/profile', { state: { from: location.pathname + (location.search || ''), locationState: location.state } })}>Add Income Details</Button></Space>}
                                 type="warning"
                                 showIcon
                                 style={{ marginBottom: 24, borderRadius: 16 }}
