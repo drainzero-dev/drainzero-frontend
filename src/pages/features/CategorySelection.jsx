@@ -14,7 +14,7 @@ import {
     StockOutlined,
     MedicineBoxOutlined,
     HomeOutlined,
-    ArrowRightOutlined, ArrowLeftOutlined,
+    ArrowRightOutlined,
     ArrowLeftOutlined,
     CheckCircleFilled
 } from '@ant-design/icons';
