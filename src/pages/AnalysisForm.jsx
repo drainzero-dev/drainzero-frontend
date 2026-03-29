@@ -33,6 +33,7 @@ const AnalysisForm = ({
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
     const [savedProfile, setSavedProfile] = useState(null);
+    const [profileLoading, setProfileLoading] = useState(true);
 
     const category    = propCategory    || location.state?.category    || 'Vehicle';
     const subcategory = propSubcategory || location.state?.subcategory || 'Car';
@@ -73,19 +74,27 @@ const AnalysisForm = ({
     // ── Load saved income profile from Supabase on mount ──
     useEffect(() => {
         const load = async () => {
-            if (!user) return;
+            if (!user) {
+                setProfileLoading(false);
+                return;
+            }
+            setProfileLoading(true);
             const profile = await getExistingProfile(user.id);
             if (profile) {
                 setSavedProfile(profile);
-                // Pre-fill form with saved global income & deductions
                 const mapped = mapProfileToForm(profile);
                 form.setFieldsValue(mapped);
+            } else {
+                setSavedProfile(null);
             }
+            setProfileLoading(false);
         };
         load();
-    }, [user]);
+    }, [user, form]);
 
     const checkFormValidity = () => {
+        // NEW USERS must add income details first before analysis can run
+        if (!savedProfile) return false;
         // Income is loaded from Supabase — just check category-specific fields
         if (isVehicle) return vPurchasePrice > 0 && vPurchaseDate && usageType;
         if (isStocks) {
@@ -443,13 +452,29 @@ const AnalysisForm = ({
                             />
                         )}
 
-                        {!savedProfile && (
-                            <Alert
-                                message={<Space>No income profile found. <Button size="small" onClick={() => navigate('/profile')}>Add Income Details</Button></Space>}
-                                type="warning"
-                                showIcon
-                                style={{ marginBottom: 24, borderRadius: 16 }}
-                            />
+                        {!profileLoading && !savedProfile && (
+                            <div style={{
+                                background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+                                border: '1.5px solid #F59E0B',
+                                borderRadius: 20, padding: '28px 32px',
+                                marginBottom: 28, textAlign: 'center'
+                            }}>
+                                <div style={{ fontSize: 28, marginBottom: 12 }}>📋</div>
+                                <Title level={4} style={{ color: '#92400E', margin: '0 0 8px 0' }}>
+                                    Income Details Required
+                                </Title>
+                                <Paragraph style={{ color: '#78350F', marginBottom: 20, fontSize: 14 }}>
+                                    You need to add your income &amp; deductions once — they'll be reused for every future analysis automatically. Only takes 2 minutes.
+                                </Paragraph>
+                                <Button
+                                    type="primary"
+                                    size="large"
+                                    onClick={() => navigate('/profile', { state: { from: location.pathname, locationState: location.state } })}
+                                    style={{ borderRadius: 12, background: '#D97706', border: 'none', fontWeight: 700, height: 48, paddingLeft: 32, paddingRight: 32 }}
+                                >
+                                    Add Income Details →
+                                </Button>
+                            </div>
                         )}
 
                         <Form
@@ -475,7 +500,7 @@ const AnalysisForm = ({
                                     type="primary"
                                     htmlType="submit"
                                     size="large"
-                                    disabled={!isFormValid || submitting}
+                                    disabled={!isFormValid || !savedProfile || submitting}
                                     loading={submitting}
                                     icon={<ArrowRightOutlined />}
                                     style={{
@@ -487,7 +512,16 @@ const AnalysisForm = ({
                                 >
                                     Analyze Now
                                 </Button>
-                                {!isFormValid && <div style={{ marginTop: 12 }}><Text type="danger">Please fill required fields before running analysis.</Text></div>}
+                                {!profileLoading && !savedProfile && (
+                                    <div style={{ marginTop: 12 }}>
+                                        <Text type="danger">Please add your income details first using the button above.</Text>
+                                    </div>
+                                )}
+                                {savedProfile && !isFormValid && (
+                                    <div style={{ marginTop: 12 }}>
+                                        <Text type="danger">Please fill all required fields before running analysis.</Text>
+                                    </div>
+                                )}
                             </div>
                         </Form>
 

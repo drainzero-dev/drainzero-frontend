@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const handleAutoLogout = async () => {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     localStorage.removeItem(LAST_ACTIVE_KEY);
     setUser(null);
     setOnboardingDone(false);
@@ -160,7 +160,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     localStorage.removeItem(LAST_ACTIVE_KEY);
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     setUser(null);
     setOnboardingDone(false);
     setUserProfile(null);

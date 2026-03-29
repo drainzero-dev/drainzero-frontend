@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../config/supabase';
 import Navbar from '../components/Navbar';
+import { mapFormToProfile, saveIncomeProfile } from '../services/profileService';
 
 const { Title, Text } = Typography;
 
@@ -72,7 +73,6 @@ const ProfilePage = () => {
             deduction80D    : inc.section_80d       || 0,
             deductionNPS    : inc.nps_personal      || 0,
             hraDeduction    : inc.hra_deduction     || inc.hra_received || 0,
-            professionalTax : inc.professional_tax  || 2500,
             regimePreference: inc.preferred_regime  || 'Auto Suggest',
           });
         }
@@ -95,7 +95,6 @@ const ProfilePage = () => {
         id              : user.id,
         email           : user.email,
         name            : values.name,
-        full_name       : values.name,
         age             : parseInt(values.age) || 0,
         gender          : values.gender,
         marital_status  : values.marital_status,
@@ -123,26 +122,9 @@ const ProfilePage = () => {
     try {
       setSavingIncome(true);
       setIncomeError('');
-      const values  = incomeForm.getFieldsValue();
-      // Merge bonus into gross_salary to avoid schema issues
-      const base    = values.annualSalary || 0;
-      const bonus   = values.bonus || 0;
-      const salary  = base + bonus;
-      const { error: err } = await supabase.from('income_profile').upsert({
-        user_id          : user.id,
-        gross_salary     : salary,
-        basic_da         : salary * 0.40,
-        hra_received     : salary * 0.20,
-        other_income     : values.otherIncome      || 0,
-        section_80c      : values.deduction80C     || 0,
-        section_80d      : values.deduction80D     || 0,
-        nps_personal     : values.deductionNPS     || 0,
-        hra_deduction    : values.hraDeduction     || 0,
-        professional_tax : values.professionalTax  || 0,
-        preferred_regime : values.regimePreference === 'Auto Suggest' ? 'new' : (values.regimePreference || 'new'),
-        updated_at       : new Date().toISOString(),
-      }, { onConflict: 'user_id' });
-      if (err) throw new Error(err.message);
+      const values = incomeForm.getFieldsValue();
+      const profilePayload = mapFormToProfile(values);
+      await saveIncomeProfile(user.id, profilePayload);
       message.success('Saved! All features will now use these updated values.');
     } catch (err) {
       setIncomeError(err.message);
@@ -191,7 +173,7 @@ const ProfilePage = () => {
               </Col>
               <Col xs={24} md={12}>
                 <Form.Item name="employment_type" label={<Text style={labelStyle}>Employment Type</Text>} rules={[{ required: true }]}>
-                  <Select size="large">
+                  <Select size="large" getPopupContainer={t => t.parentNode} style={{ width: "100%" }}>
                     <Select.Option value="Salaried">Salaried</Select.Option>
                     <Select.Option value="Self-Employed">Self-Employed</Select.Option>
                     <Select.Option value="Freelancer">Freelancer</Select.Option>
@@ -203,7 +185,7 @@ const ProfilePage = () => {
               </Col>
               <Col xs={24} md={12}>
                 <Form.Item name="sector" label={<Text style={labelStyle}>Sector</Text>} rules={[{ required: true }]}>
-                  <Select size="large" placeholder="Select sector">
+                  <Select size="large" placeholder="Select sector" getPopupContainer={t => t.parentNode} style={{ width: "100%" }}>
                     <Select.Option value="IT/Software">IT / Software</Select.Option>
                     <Select.Option value="Banking/Finance">Banking / Finance</Select.Option>
                     <Select.Option value="Government">Government / PSU</Select.Option>
@@ -220,7 +202,7 @@ const ProfilePage = () => {
               </Col>
               <Col xs={24} md={12}>
                 <Form.Item name="state" label={<Text style={labelStyle}>State</Text>} rules={[{ required: true }]}>
-                  <Select size="large" showSearch placeholder="Select state">
+                  <Select size="large" showSearch placeholder="Select state" getPopupContainer={t => t.parentNode} style={{ width: "100%" }}>
                     {STATES.map(s => <Select.Option key={s} value={s}>{s}</Select.Option>)}
                   </Select>
                 </Form.Item>
@@ -326,8 +308,10 @@ const ProfilePage = () => {
     <ConfigProvider theme={{
       token: { colorPrimary: '#5B92E5', borderRadius: 12, fontFamily: "'Outfit', sans-serif" },
       components: {
-        Input: { colorBgContainer: '#EEF3FA', colorBorder: '#B8C8E6' },
-        Card: { paddingLG: 32, borderRadiusLG: 20 }
+        Input:       { colorBgContainer: '#FFFFFF', colorBorder: '#E5E7EB', colorText: '#1A1A2E' },
+        InputNumber: { colorBgContainer: '#FFFFFF', colorBorder: '#E5E7EB', colorText: '#1A1A2E' },
+        Select:      { colorBgContainer: '#FFFFFF', colorBorder: '#E5E7EB', colorText: '#1A1A2E', colorTextPlaceholder: '#9CA3AF' },
+        Card:        { paddingLG: 32, borderRadiusLG: 20 }
       }
     }}>
       <div style={{ minHeight: '100vh', background: '#F2F3F4' }}>
@@ -365,6 +349,66 @@ const ProfilePage = () => {
 
         </div>
       </div>
+
+      <style>{`
+        /* ── PROFILE PAGE: Fix AntD v5 Select not showing selected value ── */
+
+        /* Make selector box correct height and white bg */
+        .ant-select .ant-select-selector {
+          height: 48px !important;
+          background: #ffffff !important;
+          border: 1px solid #d9d9d9 !important;
+          border-radius: 12px !important;
+          display: flex !important;
+          align-items: center !important;
+          padding: 0 11px !important;
+        }
+
+        /* This is the span that shows the chosen value — force it visible */
+        .ant-select .ant-select-selection-item {
+          line-height: 46px !important;
+          color: #1a1a2e !important;
+          font-size: 14px !important;
+          font-weight: 500 !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+          display: block !important;
+        }
+
+        /* Placeholder text */
+        .ant-select .ant-select-selection-placeholder {
+          line-height: 46px !important;
+          color: #9ca3af !important;
+        }
+
+        /* Search input inside select (don't hide it, just style) */
+        .ant-select-selection-search input {
+          height: 46px !important;
+          color: #1a1a2e !important;
+          background: transparent !important;
+          border: none !important;
+          opacity: 1 !important;
+        }
+
+        /* Dropdown popup */
+        .ant-select-dropdown .ant-select-item-option-content {
+          color: #1a1a2e !important;
+        }
+        .ant-select-dropdown .ant-select-item-option-selected {
+          background: #eef3fa !important;
+          font-weight: 600 !important;
+        }
+
+        /* Regular text inputs */
+        .ant-input {
+          background: #ffffff !important;
+          color: #1a1a2e !important;
+        }
+        .ant-input-number .ant-input-number-input {
+          background: #ffffff !important;
+          color: #1a1a2e !important;
+        }
+      `}</style>
     </ConfigProvider>
   );
 };
