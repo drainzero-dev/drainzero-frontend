@@ -13,7 +13,7 @@ const TOPIC_MAP = {
   },
   '80D_PARENTS': {
     title: 'Section 80D for Parents',
-    body: 'Separate deduction for parents' health insurance. ₹25,000, or ₹50,000 if either parent covered is a senior citizen. Preventive health check-up up to ₹5,000 is included within the overall limit.'
+    body: "Separate deduction for parents' health insurance. ₹25,000, or ₹50,000 if either parent covered is a senior citizen. Preventive health check-up up to ₹5,000 is included within the overall limit."
   },
   '80CCD_1B': {
     title: 'Section 80CCD(1B)',
