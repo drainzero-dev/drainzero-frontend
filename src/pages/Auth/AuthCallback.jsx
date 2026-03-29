@@ -5,6 +5,8 @@ import { supabase } from '../../config/supabase';
 
 const { Text } = Typography;
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const AuthCallback = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState('Completing sign in...');
@@ -19,7 +21,6 @@ const AuthCallback = () => {
       const fullName =
         authUser.user_metadata?.full_name ||
         authUser.user_metadata?.name ||
-        authUser.identities?.[0]?.identity_data?.full_name ||
         authUser.email?.split('@')[0] ||
         'User';
 
@@ -55,34 +56,54 @@ const AuthCallback = () => {
       return inserted || null;
     };
 
+    const waitForSession = async () => {
+      for (let i = 0; i < 12; i += 1) {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (data?.session?.user) return data.session;
+        await sleep(400);
+      }
+      return null;
+    };
+
     const handle = async () => {
       try {
-        setStatus('Completing sign in...');
+        setStatus('Finalizing Google sign in...');
 
-        const url = new URL(window.location.href);
-        const code = url.searchParams.get('code');
+        // For implicit browser flow, detectSessionInUrl handles the redirect URL.
+        // We just wait briefly for the session to become available.
+        let session = await waitForSession();
 
-        if (code) {
-          setStatus('Exchanging secure login code...');
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
+        // Safety fallback if a code is present for any reason.
+        if (!session) {
+          const url = new URL(window.location.href);
+          const code = url.searchParams.get('code');
+
+          if (code) {
+            setStatus('Verifying secure login...');
+            try {
+              const result = await Promise.race([
+                supabase.auth.exchangeCodeForSession(code),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Code exchange timeout')), 5000))
+              ]);
+              if (result?.error) throw result.error;
+            } catch (error) {
+              console.warn('Code exchange fallback failed:', error?.message || error);
+            }
+
+            session = await waitForSession();
+          }
         }
 
-        setStatus('Loading your session...');
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-
         if (!session?.user) {
-          setStatus('Session not found, redirecting...');
-          navigate('/login', { replace: true });
-          return;
+          throw new Error('Session not found after callback');
         }
 
         setStatus('Preparing your account...');
         const profile = await ensurePublicUser(session);
         const done = !!(profile?.onboarding_done || profile?.onboarding_complete);
 
-        // Clean up auth code from URL
+        // Clean callback URL/hash to avoid loops on refresh
         window.history.replaceState({}, document.title, '/auth/callback');
 
         if (!mounted) return;
@@ -91,7 +112,9 @@ const AuthCallback = () => {
         console.error('AuthCallback error:', err);
         if (!mounted) return;
         setStatus('Sign in failed. Redirecting...');
-        setTimeout(() => navigate('/login', { replace: true }), 800);
+        setTimeout(() => {
+          window.location.replace('/login');
+        }, 900);
       }
     };
 
