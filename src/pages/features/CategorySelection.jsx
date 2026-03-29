@@ -152,51 +152,6 @@ const CategorySelection = () => {
                 <Content style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', padding: '24px 16px' }}>
                     {/* Back to login */}
                     <div style={{ marginBottom: '16px' }}>
-                        <Button
-                            icon={<ArrowLeftOutlined />}
-                            type="text"
-                            onClick={() => navigate('/login')}
-                            style={{ color: '#5B92E5', fontWeight: 600, padding: 0 }}
-                        >
-                            Back
-                        </Button>
-                    </div>
-
-                    {/* Header */}
-                    <div style={{ marginBottom: '64px', textAlign: 'center' }}>
-                        <Title level={1} style={{ color: '#5B92E5', marginBottom: '12px', fontWeight: 800, fontSize: '3rem' }}>
-                            Select Category
-                        </Title>
-                        <Paragraph style={{ fontSize: '1.25rem', color: '#4B5563', maxWidth: 600, margin: '0 auto' }}>
-                            What activity would you like to analyze for tax optimization today?
-                        </Paragraph>
-                    </div>
-
-                    {/* Returning User Banner */}
-                    {lastResult && userProfile?.name && (
-                        <div style={{
-                            background: '#EEF3FA', borderRadius: 20, padding: '20px 28px',
-                            marginBottom: 40, border: '1px solid #B8C8E6',
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16
-                        }}>
-                            <div>
-                                <Text strong style={{ color: '#08457E', fontSize: 16 }}>
-                                    Welcome back, {userProfile.name}! 👋
-                                </Text>
-                                <div style={{ color: '#6B7280', fontSize: 13, marginTop: 4 }}>
-                                    Your last analysis: Health Score <strong style={{ color: '#5B92E5' }}>{lastResult.health_score}/100</strong>
-                                    {' · '}Recommended: <strong style={{ color: '#059669' }}>{lastResult.recommended_regime}</strong>
-                                    {' · '}Leakage: <strong style={{ color: '#EF4444' }}>₹{(lastResult.total_leakage || 0).toLocaleString()}</strong>
-                                </div>
-                            </div>
-                            <Button
-                                type="primary"
-                                size="small"
-                                onClick={() => navigate('/dashboard', { state: { backendResult: { ...lastResult, success: true, oldRegime: { totalTax: lastResult.old_tax }, newRegime: { totalTax: lastResult.new_tax }, healthScore: lastResult.health_score, recommendedRegime: lastResult.recommended_regime, leakageGaps: lastResult.leakage_gaps || [] }, formData: {}, category: '', subcategory: '', ownership: '' } })}
-                                style={{ borderRadius: 10, background: '#5B92E5', border: 'none' }}
-                            >
-                                View Last Dashboard →
-                            </Button>
                         </div>
                     )}
 

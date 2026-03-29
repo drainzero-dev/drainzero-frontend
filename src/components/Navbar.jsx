@@ -13,8 +13,10 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
     } finally {
-      navigate('/', { replace: true });
+      window.location.href = '/';
     }
   };
   const handleLogoClick = () => { if (user) navigate('/dashboard', { state: {} }); else navigate('/'); };
@@ -39,16 +41,6 @@ const Navbar = () => {
 
         {user && (
           <div className="navbar-desktop" style={{ display:'flex', alignItems:'center', gap: 12 }}>
-            <button
-              onClick={() => navigate('/dashboard', { state: location.state || {} })}
-              style={{
-                height: 38, padding: '0 16px', borderRadius: 12, border: '1px solid #BFD3F2',
-                background: '#F8FAFF', color: '#08457E', fontWeight: 700, cursor: 'pointer', display:'flex', alignItems:'center', gap:8
-              }}
-            >
-              <DashboardOutlined />
-              Dashboard
-            </button>
             <Dropdown menu={{ items: menuItems, onClick: ({ key }) => { const item = menuItems.find(m => m.key === key); if (item?.onClick) item.onClick(); } }} placement="bottomRight" arrow>
               <div style={{ cursor:'pointer', display:'flex', alignItems:'center', gap:8, padding:'6px 12px', borderRadius:10, border:'1px solid #E5E7EB', background:'#FAFAFA' }}>
                 <Avatar size={28} style={{ background:'#EEF3FA', color:'#08457E', fontSize:12, fontWeight:700, flexShrink:0 }} icon={<UserOutlined />}>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ScrollToTop    from './components/ScrollToTop';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -30,42 +30,52 @@ import TaxReport          from './pages/features/TaxReport';
 const PR  = ({ children }) => <ProtectedRoute>{children}</ProtectedRoute>;
 const PRN = ({ children }) => <ProtectedRoute requireOnboarding={false}>{children}</ProtectedRoute>;
 
+const AnimatedRoutes = () => {
+  const location = useLocation();
+
+  return (
+    <div key={location.pathname} className="route-fade-in">
+      <Routes location={location}>
+        {/* Public */}
+        <Route path="/"               element={<LandingPage />} />
+        <Route path="/login"          element={<LoginPage />} />
+        <Route path="/signup"         element={<SignupPage />} />
+        <Route path="/auth/callback"  element={<AuthCallback />} />
+
+        {/* Needs login but not onboarding */}
+        <Route path="/onboarding"     element={<PRN><OnboardingPage /></PRN>} />
+
+        {/* Protected — needs login + onboarding */}
+        <Route path="/dashboard"           element={<PR><Dashboard /></PR>} />
+        <Route path="/profile"             element={<PR><ProfilePage /></PR>} />
+        <Route path="/category-selection"  element={<PR><CategorySelection /></PR>} />
+        <Route path="/analysis"            element={<PR><AnalysisForm /></PR>} />
+
+        <Route path="/feature/tax-health"        element={<PR><TaxHealth /></PR>} />
+        <Route path="/feature/tax-leakage"       element={<PR><TaxLeakage /></PR>} />
+        <Route path="/feature/recommendations"   element={<PR><Recommendations /></PR>} />
+        <Route path="/feature/regime-comparison" element={<PR><RegimeComparison /></PR>} />
+        <Route path="/feature/salary-analysis"   element={<PR><SalaryAnalysis /></PR>} />
+        <Route path="/feature/loopholes"         element={<PR><LoopholesPage /></PR>} />
+        <Route path="/feature/documents"         element={<PR><DocumentsPage /></PR>} />
+        <Route path="/feature/what-if"           element={<PR><WhatIfSimulator /></PR>} />
+        <Route path="/feature/deductions"        element={<PR><DeductionsExplorer /></PR>} />
+        <Route path="/feature/deadlines"         element={<PR><DeadlineReminders /></PR>} />
+        <Route path="/feature/investment-guide"  element={<PR><InvestmentGuide /></PR>} />
+        <Route path="/feature/benefits"          element={<PR><BenefitsExplorer /></PR>} />
+        <Route path="/feature/report"            element={<PR><TaxReport /></PR>} />
+
+        {/* Catch all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
+  );
+};
+
 const App = () => (
   <Router>
     <ScrollToTop />
-    <Routes>
-      {/* Public */}
-      <Route path="/"               element={<LandingPage />} />
-      <Route path="/login"          element={<LoginPage />} />
-      <Route path="/signup"         element={<SignupPage />} />
-      <Route path="/auth/callback"  element={<AuthCallback />} />
-
-      {/* Needs login but not onboarding */}
-      <Route path="/onboarding"     element={<PRN><OnboardingPage /></PRN>} />
-
-      {/* Protected — needs login + onboarding */}
-      <Route path="/dashboard"           element={<PR><Dashboard /></PR>} />
-      <Route path="/profile"             element={<PR><ProfilePage /></PR>} />
-      <Route path="/category-selection"  element={<PR><CategorySelection /></PR>} />
-      <Route path="/analysis"            element={<PR><AnalysisForm /></PR>} />
-
-      <Route path="/feature/tax-health"        element={<PR><TaxHealth /></PR>} />
-      <Route path="/feature/tax-leakage"       element={<PR><TaxLeakage /></PR>} />
-      <Route path="/feature/recommendations"   element={<PR><Recommendations /></PR>} />
-      <Route path="/feature/regime-comparison" element={<PR><RegimeComparison /></PR>} />
-      <Route path="/feature/salary-analysis"   element={<PR><SalaryAnalysis /></PR>} />
-      <Route path="/feature/loopholes"         element={<PR><LoopholesPage /></PR>} />
-      <Route path="/feature/documents"         element={<PR><DocumentsPage /></PR>} />
-      <Route path="/feature/what-if"           element={<PR><WhatIfSimulator /></PR>} />
-      <Route path="/feature/deductions"        element={<PR><DeductionsExplorer /></PR>} />
-      <Route path="/feature/deadlines"         element={<PR><DeadlineReminders /></PR>} />
-      <Route path="/feature/investment-guide"  element={<PR><InvestmentGuide /></PR>} />
-      <Route path="/feature/benefits"          element={<PR><BenefitsExplorer /></PR>} />
-      <Route path="/feature/report"            element={<PR><TaxReport /></PR>} />
-
-      {/* Catch all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <AnimatedRoutes />
   </Router>
 );
 

@@ -149,3 +149,36 @@ body {
 .ant-spin-nested-loading {
   transition: opacity 0.2s ease;
 }
+
+
+/* Route transition smoothness */
+.route-fade-in {
+  animation: routeFadeIn 220ms ease both;
+}
+
+.route-fade-out {
+  animation: routeFadeOut 160ms ease both;
+}
+
+@keyframes routeFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes routeFadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(6px); }
+}
+
+
+/* Safer route transition override */
+.route-fade-in {
+  animation: routeFadeInSoft 180ms ease-out both !important;
+}
+.route-fade-out {
+  animation: none !important;
+}
+@keyframes routeFadeInSoft {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
