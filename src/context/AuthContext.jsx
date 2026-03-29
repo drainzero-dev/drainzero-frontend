@@ -98,9 +98,11 @@ export const AuthProvider = ({ children }) => {
       setOnboardingDone(done);
       setUserProfile(data);
       return done;
-    } catch {
-      setOnboardingDone(true);
-      return true;
+    } catch (error) {
+      console.error('checkOnboarding failed:', error);
+      setOnboardingDone(false);
+      setUserProfile(null);
+      return false;
     }
   };
 

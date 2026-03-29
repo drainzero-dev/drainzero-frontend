@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../config/supabase';
 import Navbar from '../components/Navbar';
+import TaxFieldLabel from '../components/TaxFieldLabel';
 import { mapFormToProfile, saveIncomeProfile } from '../services/profileService';
 
 const { Title, Text } = Typography;
@@ -268,22 +269,22 @@ const ProfilePage = () => {
             </Text>
             <Row gutter={[24, 0]}>
               <Col xs={24} md={12}>
-                <Form.Item name="deduction80C" label={<Text style={labelStyle}>80C Investments (₹)</Text>} extra="PPF, ELSS, LIC etc. — Max ₹1,50,000">
+                <Form.Item name="deduction80C" label={<TaxFieldLabel text="80C Investments (₹)" topic="80C" style={labelStyle} />} extra="PPF, ELSS, LIC etc. — Max ₹1,50,000">
                   <InputNumber style={{ ...inputStyle, width: '100%' }} prefix="₹" min={0} max={150000} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={12}>
-                <Form.Item name="deduction80D" label={<Text style={labelStyle}>80D Health Premium (₹)</Text>} extra="Self + family — Max ₹25,000">
+                <Form.Item name="deduction80D" label={<TaxFieldLabel text="80D Health Premium (₹)" topic="80D" style={labelStyle} />} extra="Self + family — Max ₹25,000">
                   <InputNumber style={{ ...inputStyle, width: '100%' }} prefix="₹" min={0} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={12}>
-                <Form.Item name="deductionNPS" label={<Text style={labelStyle}>NPS 80CCD(1B) (₹)</Text>} extra="Extra beyond 80C — Max ₹50,000">
+                <Form.Item name="deductionNPS" label={<TaxFieldLabel text="NPS 80CCD(1B) (₹)" topic="80CCD_1B" style={labelStyle} />} extra="Extra beyond 80C — Max ₹50,000">
                   <InputNumber style={{ ...inputStyle, width: '100%' }} prefix="₹" min={0} max={50000} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={12}>
-                <Form.Item name="hraDeduction" label={<Text style={labelStyle}>HRA Exemption (₹)</Text>} extra="Only if you pay rent and receive HRA">
+                <Form.Item name="hraDeduction" label={<TaxFieldLabel text="HRA Exemption (₹)" topic="HRA" style={labelStyle} />} extra="Only if you pay rent and receive HRA">
                   <InputNumber style={{ ...inputStyle, width: '100%' }} prefix="₹" min={0} />
                 </Form.Item>
               </Col>

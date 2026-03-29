@@ -7,6 +7,7 @@ import { ArrowLeftOutlined, SwapOutlined, BulbOutlined } from '@ant-design/icons
 import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import TaxAssistantChatbot from '../../components/TaxAssistantChatbot';
+import TaxFieldLabel from '../../components/TaxFieldLabel';
 
 const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -142,10 +143,10 @@ const WhatIfSimulator = () => {
                 <SliderRow label="Gross Annual Income" value={income} setValue={setIncome} max={5000000} color="#5B92E5" note="Total CTC before deductions" />
                 <Divider style={{ margin: '4px 0 20px' }} />
                 <Text style={{ fontSize: 11, color: '#6B7280', letterSpacing: 1, textTransform: 'uppercase', display: 'block', marginBottom: 20 }}>Old Regime Deductions</Text>
-                <SliderRow label="Section 80C" value={d80C} setValue={setD80C} max={150000} color="#08457E" note="Max ₹1.5L (PPF, ELSS, LIC, etc.)" />
-                <SliderRow label="Section 80D (Health)" value={d80D} setValue={setD80D} max={50000} color="#08457E" note="Max ₹25K–₹50K" />
-                <SliderRow label="NPS 80CCD(1B)" value={dNPS} setValue={setDNPS} max={50000} color="#7C3AED" note="Extra ₹50K beyond 80C" />
-                <SliderRow label="HRA Exemption" value={dHRA} setValue={setDHRA} max={600000} color="#D97706" note="House Rent Allowance" />
+                <SliderRow label={<TaxFieldLabel text="Section 80C" topic="80C" style={{ color: '#1F2937', fontWeight: 600, fontSize: 14 }} />} value={d80C} setValue={setD80C} max={150000} color="#08457E" note="Max ₹1.5L (PPF, ELSS, LIC, etc.)" />
+                <SliderRow label={<TaxFieldLabel text="Section 80D (Health)" topic="80D" style={{ color: '#1F2937', fontWeight: 600, fontSize: 14 }} />} value={d80D} setValue={setD80D} max={50000} color="#08457E" note="Max ₹25K–₹50K" />
+                <SliderRow label={<TaxFieldLabel text="NPS 80CCD(1B)" topic="80CCD_1B" style={{ color: '#1F2937', fontWeight: 600, fontSize: 14 }} />} value={dNPS} setValue={setDNPS} max={50000} color="#7C3AED" note="Extra ₹50K beyond 80C" />
+                <SliderRow label={<TaxFieldLabel text="HRA Exemption" topic="HRA" style={{ color: '#1F2937', fontWeight: 600, fontSize: 14 }} />} value={dHRA} setValue={setDHRA} max={600000} color="#D97706" note="House Rent Allowance" />
                 <SliderRow label="Home Loan Interest (24b)" value={homeLoan} setValue={setHomeLoan} max={200000} color="#DC2626" note="Max ₹2L self-occupied" />
               </Card>
             </Col>

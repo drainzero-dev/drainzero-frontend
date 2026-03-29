@@ -280,26 +280,26 @@ const OnboardingPage = () => {
         </Paragraph>
 
         <Form.Item name="deduction80C"
-          label={<Text style={labelStyle}>80C Investments (₹) <span style={{ color: '#9CA3AF', fontWeight: 400, fontSize: 12 }}>Optional</span></Text>}
+          label={<TaxFieldLabel text="80C Investments (₹)" topic="80C" style={labelStyle} suffix={<span style={{ color: '#9CA3AF', fontWeight: 400, fontSize: 12 }}>Optional</span>} />}
           extra="PPF, ELSS, LIC, EPF — Max ₹1,50,000">
           <InputNumber style={inputStyle} prefix="₹" min={0} max={150000} placeholder="e.g. 150000" formatter={fmt} parser={parse} />
         </Form.Item>
 
         <Form.Item name="deduction80D"
-          label={<Text style={labelStyle}>80D Health Insurance Premium (₹) <span style={{ color: '#9CA3AF', fontWeight: 400, fontSize: 12 }}>Optional</span></Text>}
+          label={<TaxFieldLabel text="80D Health Insurance Premium (₹)" topic="80D" style={labelStyle} suffix={<span style={{ color: '#9CA3AF', fontWeight: 400, fontSize: 12 }}>Optional</span>} />}
           extra="Self + family — Max ₹25,000 (₹50,000 if senior)">
           <InputNumber style={inputStyle} prefix="₹" min={0} placeholder="e.g. 20000" formatter={fmt} parser={parse} />
         </Form.Item>
 
         <Form.Item name="deductionNPS"
-          label={<Text style={labelStyle}>NPS Contribution 80CCD(1B) (₹) <span style={{ color: '#9CA3AF', fontWeight: 400, fontSize: 12 }}>Optional</span></Text>}
+          label={<TaxFieldLabel text="NPS Contribution 80CCD(1B) (₹)" topic="80CCD_1B" style={labelStyle} suffix={<span style={{ color: '#9CA3AF', fontWeight: 400, fontSize: 12 }}>Optional</span>} />}
           extra="Extra deduction beyond 80C — Max ₹50,000">
           <InputNumber style={inputStyle} prefix="₹" min={0} max={50000} placeholder="e.g. 50000" formatter={fmt} parser={parse} />
         </Form.Item>
 
         {isSal && (
           <Form.Item name="hraDeduction"
-            label={<Text style={labelStyle}>HRA Exemption Claimed (₹) <Tag color="blue" style={{ fontSize: 10, borderRadius: 8 }}>Salaried Only</Tag></Text>}
+            label={<TaxFieldLabel text="HRA Exemption Claimed (₹)" topic="HRA" style={labelStyle} suffix={<Tag color="blue" style={{ fontSize: 10, borderRadius: 8 }}>Salaried Only</Tag>} />}
             extra="Only if you pay rent and receive HRA from employer">
             <InputNumber style={inputStyle} prefix="₹" min={0} placeholder="e.g. 120000" formatter={fmt} parser={parse} />
           </Form.Item>

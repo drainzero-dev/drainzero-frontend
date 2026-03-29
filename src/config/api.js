@@ -47,6 +47,6 @@ export const getBenefits     = (userId)          => apiFetch(`/api/benefits?user
 export const askAgent        = (userId, message) => apiFetch('/api/agent', 'POST', { userId, message }, 35000);
 export const getAgentHistory = (userId)          => apiFetch(`/api/agent/history?userId=${userId}`);
 export const clearAgentHistory = (userId)        => apiFetch('/api/agent/history', 'DELETE', { userId });
-export const uploadDocument  = (userId, fileBase64, fileType) => apiFetch('/api/documents', 'POST', { userId, fileBase64, fileType }, 60000);
+export const uploadDocument  = (userId, fileBase64, docType, mimeType = 'application/pdf', fileName = '') => apiFetch('/api/documents', 'POST', { userId, fileBase64, docType, mimeType, fileName }, 60000);
 
 export default BACKEND_URL;
