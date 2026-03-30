@@ -41,13 +41,17 @@ const DeadlineReminders = () => {
   const income = formData.annualSalary || 0;
 
   const estimatedTax = (() => {
+    // FY 2025-26 (Budget 2025) new regime slabs; standard deduction ₹75,000
     const taxable = Math.max(0, income - 75000);
-    if (taxable <= 300000) return 0;
-    if (taxable <= 700000) return (taxable - 300000) * 0.05;
-    if (taxable <= 1000000) return 20000 + (taxable - 700000) * 0.10;
-    if (taxable <= 1200000) return 50000 + (taxable - 1000000) * 0.15;
-    if (taxable <= 1500000) return 80000 + (taxable - 1200000) * 0.20;
-    return 140000 + (taxable - 1500000) * 0.30;
+    // 87A full rebate if taxable ≤ ₹12L
+    if (taxable <= 1200000) return 0;
+    if (taxable <= 400000)  return 0;
+    if (taxable <= 800000)  return (taxable - 400000) * 0.05;
+    if (taxable <= 1200000) return 20000 + (taxable - 800000) * 0.10;
+    if (taxable <= 1600000) return 60000 + (taxable - 1200000) * 0.15;
+    if (taxable <= 2000000) return 120000 + (taxable - 1600000) * 0.20;
+    if (taxable <= 2400000) return 200000 + (taxable - 2000000) * 0.25;
+    return 300000 + (taxable - 2400000) * 0.30;
   })();
 
   const q1 = Math.round(estimatedTax * 0.15);

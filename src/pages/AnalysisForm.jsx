@@ -29,7 +29,7 @@ const AnalysisForm = ({
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, hasIncomeData } = useAuth();   // FIX: also pull hasIncomeData
+    const { user, hasIncomeData, markIncomeDataSaved } = useAuth();
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
     const [savedProfile, setSavedProfile] = useState(null);
@@ -161,6 +161,7 @@ const AnalysisForm = ({
                 setSubmitting(true);
                 message.loading({ content: 'Running analysis...', key: 'analysis', duration: 0 });
                 backendResult = await runFullAnalysis(user.id, user.email, mergedValues, category, subcategory, ownership);
+                markIncomeDataSaved();  // update context immediately so gate is satisfied
                 message.success({ content: 'Analysis complete!', key: 'analysis', duration: 2 });
             } catch (err) {
                 message.destroy('analysis');

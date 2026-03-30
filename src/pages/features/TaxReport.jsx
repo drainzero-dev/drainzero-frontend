@@ -33,16 +33,18 @@ const TaxReport = () => {
     return 112500+(t-1000000)*0.30;
   };
   const calcNew = (t) => {
-    if (t <= 400000) return 0;
-    if (t <= 800000) return (t-400000)*0.05;
+    // FY 2025-26 (Budget 2025) slabs
+    if (t <= 400000)  return 0;
+    if (t <= 800000)  return (t-400000)*0.05;
     if (t <= 1200000) return 20000+(t-800000)*0.10;
     if (t <= 1600000) return 60000+(t-1200000)*0.15;
     if (t <= 2000000) return 120000+(t-1600000)*0.20;
-    return 200000+(t-2000000)*0.25;
+    if (t <= 2400000) return 200000+(t-2000000)*0.25;
+    return 300000+(t-2400000)*0.30;
   };
 
   const taxOld  = backendResult?.oldRegime?.totalTax ?? (taxableOld<=500000?0:Math.round(calcOld(taxableOld)*1.04));
-  const taxNew  = backendResult?.newRegime?.totalTax ?? (taxableNew<=700000?0:Math.round(calcNew(taxableNew)*1.04));
+  const taxNew  = backendResult?.newRegime?.totalTax ?? (taxableNew<=1200000?0:Math.round(calcNew(taxableNew)*1.04));
   const better  = taxOld <= taxNew ? 'Old Regime' : 'New Regime';
   const saving  = Math.abs(taxOld - taxNew);
   // Real health score from backend, or compute from form data, never fake

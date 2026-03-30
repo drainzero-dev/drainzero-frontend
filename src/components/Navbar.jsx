@@ -11,14 +11,13 @@ const Navbar = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handleLogout = async () => {
+    setDrawerOpen(false);
     try {
       await logout();
     } catch (error) {
       console.error('Logout failed:', error);
-    } finally {
-      setDrawerOpen(false);
-      window.location.replace('/login');
     }
+    navigate('/login', { replace: true });
   };
   const handleLogoClick = () => { if (user) navigate('/dashboard', { state: {} }); else navigate('/'); };
 

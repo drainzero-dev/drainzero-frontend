@@ -4,10 +4,22 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // This fixes page refresh and back/forward navigation in dev
     historyApiFallback: true,
   },
   preview: {
     historyApiFallback: true,
-  }
+  },
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks — split large deps from app code
+          'vendor-react':  ['react', 'react-dom', 'react-router-dom'],
+          'vendor-antd':   ['antd', '@ant-design/icons'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+        },
+      },
+    },
+  },
 })

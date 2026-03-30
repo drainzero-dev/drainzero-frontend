@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layout, Typography, Card, Row, Col, Statistic, Table, Tag, Button, ConfigProvider, Space, Alert, Spin } from 'antd';
 import { ArrowLeftOutlined, CheckCircleFilled, SwapOutlined, InfoCircleOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import dayjs from 'dayjs';
 import TaxAssistantChatbot from '../../components/TaxAssistantChatbot';
@@ -12,6 +12,7 @@ const { Title, Text, Paragraph } = Typography;
 
 const RegimeComparison = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { formData, backendResult, dataLoading, category, subcategory, ownership } = useProfileData();
 
     if (dataLoading) {
@@ -145,13 +146,14 @@ const RegimeComparison = () => {
     };
 
     const calcTaxNew = (taxable) => {
-        // Updated FY 25-26 Slabs
-        if (taxable <= 300000) return 0;
-        if (taxable <= 700000) return (taxable - 300000) * 0.05;
-        if (taxable <= 1000000) return 20000 + (taxable - 700000) * 0.10;
-        if (taxable <= 1200000) return 50000 + (taxable - 1000000) * 0.15;
-        if (taxable <= 1500000) return 80000 + (taxable - 1200000) * 0.20;
-        return 140000 + (taxable - 1500000) * 0.30;
+        // FY 2025-26 (Budget 2025) slabs
+        if (taxable <= 400000)  return 0;
+        if (taxable <= 800000)  return (taxable - 400000) * 0.05;
+        if (taxable <= 1200000) return 20000 + (taxable - 800000) * 0.10;
+        if (taxable <= 1600000) return 60000 + (taxable - 1200000) * 0.15;
+        if (taxable <= 2000000) return 120000 + (taxable - 1600000) * 0.20;
+        if (taxable <= 2400000) return 200000 + (taxable - 2000000) * 0.25;
+        return 300000 + (taxable - 2400000) * 0.30;
     };
 
     const taxableIncomeOld = Math.max(0, grossTotalIncome - totalDeductionsOld);
@@ -160,9 +162,9 @@ const RegimeComparison = () => {
     let taxOld = calcTaxOld(taxableIncomeOld);
     let taxNew = calcTaxNew(taxableIncomeNew);
 
-    // Rebate 87A for New Regime (In New Regime, up to 7L taxable income, tax is Nil)
-    if (taxableIncomeNew <= 700000) taxNew = 0;
-    // Rebate 87A for Old Regime (Up to 5L)
+    // Rebate 87A — New Regime: full rebate if taxable ≤ ₹12L (Budget 2025)
+    if (taxableIncomeNew <= 1200000) taxNew = 0;
+    // Rebate 87A — Old Regime: full rebate if taxable ≤ ₹5L
     if (taxableIncomeOld <= 500000) taxOld = 0;
 
     // Use backend values if available, else use local calculation
@@ -204,7 +206,7 @@ const RegimeComparison = () => {
                 <Content style={{ maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '24px 16px' }}>
                     <Button
                         icon={<ArrowLeftOutlined />}
-                        onClick={() => navigate('/dashboard')}
+                        onClick={() => navigate('/dashboard', { state: location.state })}
                         style={{ marginBottom: '24px', borderRadius: '12px', fontWeight: 600, color: '#5B92E5' }}
                     >
                         Back to Dashboard

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layout, Typography, Card, Row, Col, Space, Button, Tag, Progress, ConfigProvider, Spin } from 'antd';
 import { ArrowLeftOutlined, WarningOutlined, CheckCircleFilled } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import TaxAssistantChatbot from '../../components/TaxAssistantChatbot';
 import useProfileData from '../../hooks/useProfileData';
@@ -11,6 +11,7 @@ const { Title, Text, Paragraph } = Typography;
 
 const TaxLeakage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { formData, backendResult, dataLoading, category } = useProfileData();
 
   if (dataLoading) {
@@ -76,7 +77,7 @@ const TaxLeakage = () => {
         <Navbar />
         <div style={{ padding: '24px 16px' }}>
           <Content style={{ maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
-            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/dashboard')}
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/dashboard', { state: location.state })}
               style={{ marginBottom: 24, borderRadius: 12, fontWeight: 600, color: '#5B92E5' }}>
               Back to Dashboard
             </Button>

@@ -8,7 +8,7 @@ import {
   UserOutlined, SaveOutlined, ArrowLeftOutlined,
   EnvironmentOutlined, DollarOutlined, SafetyOutlined
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../config/supabase';
 import Navbar from '../components/Navbar';
@@ -28,7 +28,11 @@ const STATES = [
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { user, userProfile, refreshProfile } = useAuth();
+  const location = useLocation();
+  const { user, userProfile, refreshProfile, markIncomeDataSaved } = useAuth();
+  // If user arrived from AnalysisForm, these let us navigate back with context restored
+  const returnTo       = location.state?.from         || null;
+  const returnState    = location.state?.locationState || null;
   const [personalForm] = Form.useForm();
   const [incomeForm]   = Form.useForm();
   const [saving,  setSaving]  = useState(false);
@@ -139,8 +143,15 @@ const ProfilePage = () => {
       const profilePayload = mapFormToProfile(capped);
       await saveIncomeProfile(user.id, profilePayload);
 
-      // FIX: only show success when saveIncomeProfile resolves without throwing
+      // Update context so hasIncomeData is immediately true everywhere
+      markIncomeDataSaved();
+
       message.success('✅ Details saved successfully — all features use your updated values.');
+
+      // If user arrived from AnalysisForm (or any other page), go back with context restored
+      if (returnTo) {
+        setTimeout(() => navigate(returnTo, { state: returnState, replace: true }), 600);
+      }
     } catch (err) {
       // FIX: show failure explicitly — never fake success
       message.error(`❌ Failed to save: ${err.message}`);
@@ -336,9 +347,9 @@ const ProfilePage = () => {
         <Navbar />
         <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 24px' }}>
 
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/dashboard')}
+          <Button icon={<ArrowLeftOutlined />} onClick={() => returnTo ? navigate(returnTo, { state: returnState }) : navigate('/dashboard')}
             style={{ marginBottom: 24, borderRadius: 12, color: '#5B92E5', borderColor: '#B8C8E6' }}>
-            Back to Dashboard
+            {returnTo ? 'Back' : 'Back to Dashboard'}
           </Button>
 
           {/* Avatar header */}
