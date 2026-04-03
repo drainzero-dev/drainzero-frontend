@@ -43,7 +43,7 @@ const parse = v => v ? v.replace(/,/g, '') : '0';
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, markOnboardingDone, markIncomeDataSaved } = useAuth();
   const [current, setCurrent] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
@@ -137,11 +137,21 @@ const OnboardingPage = () => {
         console.error('[Onboarding] Income profile error:', incErr.message);
       }
 
-      // 3. Refresh auth context (updates hasIncomeData + onboardingDone)
-      await refreshProfile();
+      // FIX (Bug A): Update auth context state SYNCHRONOUSLY before navigating.
+      // refreshProfile() does a DB round-trip and schedules a React state update —
+      // by the time navigate() fires, ProtectedRoute may still see onboardingDone=false
+      // and redirect back here, creating an infinite loop.
+      // markOnboardingDone() sets state in the same render cycle, so ProtectedRoute
+      // sees onboardingDone=true the moment the new route mounts.
+      markOnboardingDone();
+      if (incomePayload.gross_salary > 0) markIncomeDataSaved();
 
-      // 4. Navigate to category selection
-      navigate('/category-selection', { replace: true });
+      // Kick off a background refresh so userProfile and hasIncomeData fully sync
+      refreshProfile().catch(() => {});
+
+      // Navigate to dashboard (safer than category-selection — dashboard has its
+      // own "Start Analysis" CTA and doesn't depend on any prior form state)
+      navigate('/dashboard', { replace: true });
 
     } catch (err) {
       console.error('[Onboarding] Submit error:', err);

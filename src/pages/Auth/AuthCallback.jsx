@@ -14,7 +14,10 @@ const AuthCallback = () => {
   useEffect(() => {
     let mounted = true;
 
-    // Ensure a public `users` row exists for the auth user
+    // Ensure a public `users` row exists for the auth user.
+    // Critical for returning Google OAuth users — their auth.users row already
+    // exists so the on_auth_user_created trigger WON'T fire again. Without this,
+    // checkOnboarding() in AuthContext finds no public.users row and loops.
     const ensurePublicUser = async (session) => {
       if (!session?.user?.id) return null;
       const authUser = session.user;
@@ -24,36 +27,67 @@ const AuthCallback = () => {
         authUser.email?.split('@')[0] ||
         'User';
 
-      const { data: existing } = await supabase
-        .from('users')
-        .select('id, onboarding_done, onboarding_complete')
-        .eq('id', authUser.id)
-        .maybeSingle();
-
-      if (existing) return existing;
-
-      const { data: inserted, error } = await supabase
+      // Always upsert — safe if row already exists, creates it if missing
+      const { data: row, error } = await supabase
         .from('users')
         .upsert(
           {
-            id              : authUser.id,
-            email           : authUser.email,
-            name            : fullName,
-            full_name       : fullName,
-            onboarding_done : false,
-            onboarding_complete: false,
-            updated_at      : new Date().toISOString(),
+            id                 : authUser.id,
+            email              : authUser.email,
+            name               : fullName,
+            full_name          : fullName,
+            // Don't overwrite onboarding_done if row already exists — upsert
+            // with onConflict:'id' won't touch columns not listed here...
+            // But we need to set defaults for new rows. Use a select-then-insert
+            // pattern to preserve existing data.
           },
-          { onConflict: 'id' }
+          { onConflict: 'id', ignoreDuplicates: true }
         )
         .select('id, onboarding_done, onboarding_complete')
         .maybeSingle();
 
-      if (error) {
-        console.error('Failed to create public user row:', error.message);
-        return null;
+      // ignoreDuplicates=true means upsert is a no-op if row exists — now read it
+      if (!row) {
+        const { data: existing } = await supabase
+          .from('users')
+          .select('id, onboarding_done, onboarding_complete')
+          .eq('id', authUser.id)
+          .maybeSingle();
+
+        if (existing) return existing;
+
+        // Still nothing — do a proper insert for a brand-new user
+        const { data: inserted, error: insertErr } = await supabase
+          .from('users')
+          .insert({
+            id                 : authUser.id,
+            email              : authUser.email,
+            name               : fullName,
+            full_name          : fullName,
+            onboarding_done    : false,
+            onboarding_complete: false,
+            updated_at         : new Date().toISOString(),
+          })
+          .select('id, onboarding_done, onboarding_complete')
+          .maybeSingle();
+
+        if (insertErr) {
+          console.error('Failed to create public user row:', insertErr.message);
+          // Try reading one more time — trigger may have created it
+          const { data: fallback } = await supabase
+            .from('users')
+            .select('id, onboarding_done, onboarding_complete')
+            .eq('id', authUser.id)
+            .maybeSingle();
+          return fallback;
+        }
+        return inserted;
       }
-      return inserted;
+
+      if (error && error.code !== '23505') {
+        console.error('ensurePublicUser error:', error.message);
+      }
+      return row;
     };
 
     const waitForSession = async () => {
@@ -94,15 +128,22 @@ const AuthCallback = () => {
         if (!session?.user) throw new Error('Session not found after callback');
 
         setStatus('Preparing your account...');
+
+        // FIX (Bug C): ensurePublicUser MUST complete before AuthContext's
+        // checkOnboarding runs. We block here so the row definitely exists
+        // in public.users by the time the SIGNED_IN event fires and the context
+        // queries the DB.
         const profile = await ensurePublicUser(session);
         const onboardingDone = !!(profile?.onboarding_done || profile?.onboarding_complete);
+
+        // Give AuthContext's onAuthStateChange handler a tick to fire and settle
+        await sleep(200);
 
         // Clean URL so refreshing doesn't loop
         window.history.replaceState({}, document.title, '/auth/callback');
 
         if (!mounted) return;
 
-        // FIX: onboarded users → /dashboard, new users → /onboarding
         navigate(onboardingDone ? '/dashboard' : '/onboarding', { replace: true });
       } catch (err) {
         console.error('AuthCallback error:', err.message);

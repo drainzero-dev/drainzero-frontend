@@ -33,10 +33,15 @@ const getCachedSession = () => {
 export const AuthProvider = ({ children }) => {
   const cachedSession   = getCachedSession();
   const [user,           setUser]           = useState(cachedSession?.user ?? null);
-  const [loading,        setLoading]        = useState(!cachedSession);
+
+  // FIX (Bug B): Always start loading=true.
+  // A cached session tells us WHO the user is, but NOT their onboarding status.
+  // ProtectedRoute must wait for checkOnboarding() to confirm DB state before
+  // rendering any protected page — otherwise it sees onboardingDone=false and
+  // immediately redirects to /onboarding before the DB check even runs.
+  const [loading,        setLoading]        = useState(true);
   const [onboardingDone, setOnboardingDone] = useState(false);
   const [userProfile,    setUserProfile]    = useState(null);
-  // ── NEW: tracks whether user has real income data in DB ──
   const [hasIncomeData,  setHasIncomeData]  = useState(false);
 
   const initRef    = useRef(false);
@@ -107,7 +112,6 @@ export const AuthProvider = ({ children }) => {
       setOnboardingDone(done);
       setUserProfile(userData);
 
-      // ── Check income_profile: must exist AND have real salary > 0 ──
       const { data: incomeRow } = await supabase
         .from('income_profile')
         .select('user_id, gross_salary')
@@ -130,12 +134,48 @@ export const AuthProvider = ({ children }) => {
     initRef.current = true;
 
     const init = async () => {
-      if (cachedSession?.user) checkOnboarding(cachedSession.user.id);
+      // FIX (Bug C): For returning Google OAuth users their auth.users row already
+      // exists so the DB trigger won't fire. We must ensure a public.users row
+      // exists here, BEFORE checkOnboarding reads it, so they don't get stuck.
       const { data: { session } } = await supabase.auth.getSession();
       const u = session?.user ?? null;
       setUser(u);
-      if (u) await checkOnboarding(u.id);
-      else if (!u && cachedSession?.user) clearAllState();
+
+      if (u) {
+        // Ensure public.users row exists for this user (handles returning OAuth users
+        // whose DB row was deleted while their auth.users record still exists)
+        const { data: existingRow } = await supabase
+          .from('users')
+          .select('id, onboarding_done, onboarding_complete')
+          .eq('id', u.id)
+          .maybeSingle();
+
+        if (!existingRow) {
+          // Row missing — create it so checkOnboarding can proceed
+          const fullName =
+            u.user_metadata?.full_name ||
+            u.user_metadata?.name ||
+            u.email?.split('@')[0] ||
+            'User';
+          await supabase.from('users').upsert(
+            {
+              id: u.id,
+              email: u.email,
+              name: fullName,
+              full_name: fullName,
+              onboarding_done: false,
+              onboarding_complete: false,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'id' }
+          );
+        }
+
+        await checkOnboarding(u.id);
+      } else if (!u && cachedSession?.user) {
+        clearAllState();
+      }
+
       setLoading(false);
     };
 
@@ -169,7 +209,6 @@ export const AuthProvider = ({ children }) => {
     if (error) throw error;
   };
 
-  // ── FIX: full logout — clear token, storage, state; caller handles redirect ──
   const logout = async () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
@@ -181,13 +220,18 @@ export const AuthProvider = ({ children }) => {
     return await checkOnboarding(user.id);
   };
 
-  // ── Called by CategorySelection/AnalysisForm after income is saved ──
+  // FIX (Bug A): Expose setOnboardingDone so OnboardingPage can update it
+  // synchronously BEFORE navigating — eliminates the ProtectedRoute race condition.
+  const markOnboardingDone = useCallback(() => {
+    setOnboardingDone(true);
+  }, []);
+
   const markIncomeDataSaved = useCallback(() => setHasIncomeData(true), []);
 
   return (
     <AuthContext.Provider value={{
       user, loading, onboardingDone, userProfile,
-      hasIncomeData, markIncomeDataSaved,
+      hasIncomeData, markIncomeDataSaved, markOnboardingDone,
       loginWithGoogle, logout, refreshProfile,
     }}>
       {children}
