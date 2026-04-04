@@ -4,36 +4,27 @@ const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('Missing Supabase env vars. Check your .env file.');
+  console.error('[DrainZero] Missing Supabase env vars!');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  ROOT CAUSE FIX — flowType: 'implicit' → 'pkce'
+// ─── CRITICAL FIX ────────────────────────────────────────────────────────────
+// Previous config had flowType:'implicit' + storageKey:'drainzero-session'.
 //
-//  The OLD implicit flow delivers tokens in the URL hash: #access_token=...
-//  Supabase has migrated ALL projects to PKCE flow (the modern standard).
-//  With PKCE, Google OAuth redirects back with a short-lived ?code= query
-//  param instead. An implicit-flow client ignores this code completely, so
-//  getSession() always returns null → waitForSession() times out after 6 s
-//  → "Sign in failed. Redirecting..."
+// Two problems:
+// 1. Supabase now uses PKCE flow. With implicit, the ?code= callback param is
+//    ignored → getSession() returns null forever → "Sign in failed".
+// 2. The custom storageKey 'drainzero-session' caused PKCE code_verifiers to
+//    be stored under non-standard keys, so the exchange couldn't find them.
 //
-//  Setting flowType:'pkce' + detectSessionInUrl:true tells the Supabase client
-//  to automatically exchange the ?code= for a real session on startup,
-//  which is exactly what AuthCallback.waitForSession() then picks up.
+// Fix: flowType:'pkce' + no custom storageKey (use Supabase default).
+// The default key is: sb-{hostname}-auth-token  (auto-generated, safe).
 // ─────────────────────────────────────────────────────────────────────────────
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    flowType          : 'pkce',           // ← FIXED (was 'implicit')
+    flowType          : 'pkce',
     autoRefreshToken  : true,
     persistSession    : true,
     detectSessionInUrl: true,
-    // Explicit localStorage adapter — works on Brave, Chrome, Firefox mobile
-    storage: {
-      getItem   : (key) => { try { return localStorage.getItem(key); }    catch { return null; } },
-      setItem   : (key, val) => { try { localStorage.setItem(key, val); } catch {} },
-      removeItem: (key) => { try { localStorage.removeItem(key); }        catch {} },
-    },
-    storageKey: 'drainzero-session',
   },
 });
 

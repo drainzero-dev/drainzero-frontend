@@ -1,36 +1,45 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Spin } from 'antd';
+import { Spin, Typography } from 'antd';
 
+const { Text } = Typography;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ProtectedRoute
+//
+//  loading=true  → spinner (auth context still resolving — DO NOT redirect)
+//  !user         → send to /login
+//  !onboarding   → send to /onboarding  (when requireOnboarding=true, default)
+//  otherwise     → render children
+// ─────────────────────────────────────────────────────────────────────────────
 const ProtectedRoute = ({ children, requireOnboarding = true }) => {
   const { user, loading, onboardingDone } = useAuth();
   const location = useLocation();
 
-  // Show spinner only if context is still loading
-  // With cached session this is near-instant on refresh
   if (loading) {
     return (
       <div style={{
         display: 'flex', flexDirection: 'column',
         justifyContent: 'center', alignItems: 'center',
-        height: '100vh', background: '#F2F3F4', gap: 16
+        height: '100vh', background: '#F2F3F4', gap: 20,
       }}>
-        <img src="/DRAINZERO-LOGO.png" alt="DrainZero"
-          style={{ height: 48, width: 'auto' }}
-          onError={(e) => { e.target.style.display = 'none'; }}
+        <img
+          src="/DRAINZERO-LOGO.png"
+          alt="DrainZero"
+          style={{ height: 64, width: 'auto' }}
+          onError={e => { e.target.style.display = 'none'; }}
         />
         <Spin size="large" />
+        <Text style={{ color: '#6B7280', fontSize: 15 }}>Loading…</Text>
       </div>
     );
   }
 
-  // Not logged in
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Not onboarded
   if (requireOnboarding && !onboardingDone) {
     return <Navigate to="/onboarding" replace />;
   }
