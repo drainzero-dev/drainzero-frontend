@@ -1,150 +1,113 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Spin, Typography } from 'antd';
-import { supabase } from '../../config/supabase';
-import { ensurePublicUserRow } from '../../context/AuthContext';
+import { Spin, Typography, Button } from 'antd';
+import { useAuth } from '../../context/AuthContext';
 
 const { Text } = Typography;
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// ─────────────────────────────────────────────────────────────────────────────
+//  AuthCallback — Google OAuth lands here: /auth/callback
+//
+//  HOW IT WORKS:
+//  ┌─ Supabase client (supabase.js) has detectSessionInUrl: true
+//  │   → It sees ?code= in the URL on init and auto-exchanges it (PKCE)
+//  │   → On success it fires onAuthStateChange('SIGNED_IN', session)
+//  │
+//  ├─ AuthContext hears SIGNED_IN → calls processUser → sets loading=false
+//  │
+//  └─ This component watches useAuth() and navigates when auth resolves.
+//
+//  We do NOT manually call exchangeCodeForSession here — doing so after
+//  detectSessionInUrl has already consumed the code would clear the
+//  code_verifier from storage, causing "pkce code verifier not found"
+//  errors that are silently swallowed as "Sign in failed".
+// ─────────────────────────────────────────────────────────────────────────────
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  AuthCallback — the page Google redirects back to: /auth/callback
-//
-//  Handles ALL possible Supabase OAuth response types:
-//    • PKCE  → arrives as ?code=xxx  (modern Supabase, flowType:'pkce')
-//    • Implicit → arrives as #access_token=xxx (legacy Supabase)
-//    • Error  → arrives as ?error=xxx or #error=xxx
-//
-//  After establishing the session it ensures the public.users row exists
-//  (critical for users who had their row deleted while auth.users is intact),
-//  reads onboarding status, and navigates to /dashboard or /onboarding.
-// ─────────────────────────────────────────────────────────────────────────────
+const MSGS = [
+  [0,    'Signing in with Google…'],
+  [2000, 'Verifying your account…'],
+  [5000, 'Setting up your profile…'],
+  [9000, 'Almost there…'],
+];
 
 const AuthCallback = () => {
   const navigate = useNavigate();
-  const [status, setStatus] = useState('Completing sign in...');
+  const { user, loading, onboardingDone } = useAuth();
 
+  const [oauthError,  setOauthError]  = useState('');
+  const [statusMsg,   setStatusMsg]   = useState(MSGS[0][1]);
+
+  // ── Step 1: check for URL-level OAuth errors (before anything else) ──────
   useEffect(() => {
-    let mounted = true;
+    const q = new URLSearchParams(window.location.search);
+    const h = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const err =
+      q.get('error_description') || h.get('error_description') ||
+      q.get('error')             || h.get('error');
 
-    const run = async () => {
-      try {
-        const queryParams = new URLSearchParams(window.location.search);
-        const hashParams  = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    if (err) setOauthError(decodeURIComponent(err.replace(/\+/g, ' ')));
 
-        // ── 1. Detect and throw OAuth-level errors ───────────────────────
-        const oauthErr =
-          queryParams.get('error_description') ||
-          hashParams.get('error_description')  ||
-          queryParams.get('error')             ||
-          hashParams.get('error');
+    // Progressive status messages so user knows it's working
+    const timers = MSGS.slice(1).map(([ms, msg]) =>
+      setTimeout(() => setStatusMsg(msg), ms)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, []);
 
-        if (oauthErr) throw new Error(decodeURIComponent(oauthErr.replace(/\+/g, ' ')));
+  // ── Step 2: react to auth state — navigate once it resolves ─────────────
+  useEffect(() => {
+    if (oauthError) return; // OAuth failed — show error UI instead
+    if (loading)    return; // Still processing — AuthContext will call done()
 
-        setStatus('Finalizing Google sign in...');
+    // Clean the URL so a hard refresh doesn't replay the code
+    window.history.replaceState({}, document.title, '/auth/callback');
 
-        // ── 2. Handle IMPLICIT flow (legacy) ─────────────────────────────
-        // If Supabase returns tokens in the URL hash, use setSession directly.
-        const implicitToken   = hashParams.get('access_token');
-        const implicitRefresh = hashParams.get('refresh_token') || '';
+    if (user) {
+      // Auth succeeded — AuthContext already ran ensurePublicUserRow + checkOnboarding
+      navigate(onboardingDone ? '/dashboard' : '/onboarding', { replace: true });
+    } else {
+      // AuthContext's 12s safety timer fired with no session = auth failed
+      window.location.replace('/login');
+    }
+  }, [user, loading, onboardingDone, oauthError, navigate]);
 
-        if (implicitToken) {
-          console.log('[AuthCallback] implicit flow detected');
-          const { error: setErr } = await supabase.auth.setSession({
-            access_token : implicitToken,
-            refresh_token: implicitRefresh,
-          });
-          if (setErr) throw setErr;
-        }
+  // ── Error UI ─────────────────────────────────────────────────────────────
+  if (oauthError) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        background: '#F2F3F4', gap: 20, padding: 24,
+      }}>
+        <img src="/DRAINZERO-LOGO.png" alt="DrainZero"
+          style={{ height: 72, width: 'auto' }}
+          onError={e => { e.target.style.display = 'none'; }}
+        />
+        <Text style={{ color: '#EF4444', fontSize: 16, textAlign: 'center', maxWidth: 360 }}>
+          Google sign-in was declined or failed.<br />
+          <span style={{ fontSize: 13, color: '#9CA3AF' }}>{oauthError}</span>
+        </Text>
+        <Button type="primary" onClick={() => window.location.replace('/login')}
+          style={{ height: 48, borderRadius: 12, paddingInline: 32, fontWeight: 700 }}>
+          Try Again
+        </Button>
+      </div>
+    );
+  }
 
-        // ── 3. Handle PKCE flow ──────────────────────────────────────────
-        // With detectSessionInUrl:true the client auto-exchanges ?code= on
-        // init. We may need to do it manually if the client initialised
-        // before the URL was set (edge case with some bundlers).
-        if (!implicitToken) {
-          const code = queryParams.get('code');
-          if (code) {
-            console.log('[AuthCallback] PKCE flow, trying exchange');
-            // Try manual exchange first — detectSessionInUrl might not have
-            // run yet if the client was created before navigation completed.
-            try {
-              const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
-              if (exErr && !exErr.message?.includes('already')) throw exErr;
-            } catch (exErr) {
-              // "already used" / "invalid grant" means detectSessionInUrl
-              // already exchanged it — safe to ignore, poll below.
-              if (!exErr.message?.includes('already') && !exErr.message?.includes('invalid')) {
-                throw exErr;
-              }
-            }
-          }
-        }
-
-        // ── 4. Poll for session (handles async detection / exchange) ─────
-        let session = null;
-        for (let i = 0; i < 25; i++) {          // max 10 s
-          const { data, error } = await supabase.auth.getSession();
-          if (error) throw error;
-          if (data?.session?.user) { session = data.session; break; }
-          await sleep(400);
-        }
-
-        if (!session?.user) {
-          throw new Error(
-            'Could not establish a session. The sign-in link may have expired — please try again.'
-          );
-        }
-
-        setStatus('Preparing your account...');
-
-        // ── 5. Guarantee public.users row exists ─────────────────────────
-        const profile        = await ensurePublicUserRow(session.user);
-        const onboardingDone = !!(
-          profile?.onboarding_done || profile?.onboarding_complete
-        );
-
-        // Give AuthContext's SIGNED_IN handler a moment to settle so
-        // ProtectedRoute sees the correct state the instant we navigate.
-        await sleep(300);
-
-        // Clean the URL — prevents the code being re-used on hard refresh
-        window.history.replaceState({}, document.title, '/auth/callback');
-
-        if (!mounted) return;
-
-        navigate(onboardingDone ? '/dashboard' : '/onboarding', { replace: true });
-
-      } catch (err) {
-        console.error('[AuthCallback] error:', err.message);
-        if (!mounted) return;
-        setStatus('Sign in failed. Redirecting...');
-        setTimeout(() => { window.location.replace('/login'); }, 2000);
-      }
-    };
-
-    run();
-    return () => { mounted = false; };
-  }, [navigate]);
-
+  // ── Loading UI ───────────────────────────────────────────────────────────
   return (
     <div style={{
-      minHeight      : '100vh',
-      display        : 'flex',
-      flexDirection  : 'column',
-      alignItems     : 'center',
-      justifyContent : 'center',
-      background     : '#F2F3F4',
-      gap            : 20,
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: '#F2F3F4', gap: 20,
     }}>
-      <img
-        src="/DRAINZERO-LOGO.png"
-        alt="DrainZero"
+      <img src="/DRAINZERO-LOGO.png" alt="DrainZero"
         style={{ height: 72, width: 'auto' }}
         onError={e => { e.target.style.display = 'none'; }}
       />
       <Spin size="large" />
-      <Text style={{ color: '#6B7280', fontSize: 16 }}>{status}</Text>
+      <Text style={{ color: '#6B7280', fontSize: 16 }}>{statusMsg}</Text>
     </div>
   );
 };
