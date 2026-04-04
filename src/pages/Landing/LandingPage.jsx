@@ -14,7 +14,7 @@ const FEATURES = [
   { title: 'Tax Leakage Detection', desc: 'Finds money you\'re losing without knowing — missed deductions, unclaimed exemptions.', icon: <SearchOutlined />, color: '#F59E0B' },
   { title: 'Tax Health Score', desc: 'A score out of 100 showing how optimized your tax planning is.', icon: <LineChartOutlined />, color: '#10B981' },
   { title: 'AI Tax Assistant', desc: 'Ask anything — the AI knows your income, deductions and profile. Like a personal CA.', icon: <ThunderboltFilled />, color: '#7C3AED' },
-  { title: 'Legal Loopholes', desc: '14 legally bulletproof strategies — HUF, RNOR, LTCG harvesting, marriage gifts and more.', icon: <BulbOutlined />, color: '#D97706' },
+  { title: 'Legal Loopholes', desc: '15 legally bulletproof strategies — HUF, RNOR, LTCG harvesting, corporate car lease and more.', icon: <BulbOutlined />, color: '#D97706' },
   { title: 'Document Upload', desc: 'Upload Form 16 or AIS — Gemini Vision reads it and fills your profile automatically.', icon: <FileTextOutlined />, color: '#0891B2' },
   { title: 'What-If Simulator', desc: 'Drag sliders to see live tax impact. No other free tool has this.', icon: <WalletOutlined />, color: '#059669' },
   { title: '50+ Deductions Explorer', desc: 'Every tax section — 80C to 112A — with your personal claim status.', icon: <CheckCircleOutlined />, color: '#EF4444' },
@@ -22,7 +22,7 @@ const FEATURES = [
 
 const STATS = [
   { value: '50+', label: 'Tax Sections Covered' },
-  { value: '14', label: 'Legal Loopholes' },
+  { value: '15', label: 'Legal Loopholes' },
   { value: '63', label: 'KB Entries (RAG)' },
   { value: '₹0', label: 'Cost to Use' },
 ];

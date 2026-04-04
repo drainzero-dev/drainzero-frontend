@@ -254,6 +254,25 @@ const LOOPHOLES = [
     ],
     caution: 'Window is time-limited. Consult a CA before applying. False declarations still prosecutable.'
   },
+  {
+    id: 15,
+    title: 'Corporate Car Lease — Company Pays, You Save Big',
+    tag: 'Salary Structure',
+    tagColor: '#0891B2',
+    saving: '₹60K–₹3L/yr',
+    section: 'Sec 17(2)(iii)',
+    difficulty: 'Medium',
+    description: 'Instead of buying a car with post-tax money, have your company lease it. The perquisite value taxed in your hands is only ₹1,800–₹2,400/month — vs an actual lease of ₹12,000–₹25,000/month. The company gets full GST input credit. You get a brand-new car every 3–4 years at a fraction of the real cost.',
+    steps: [
+      'Ask HR to restructure CTC — add "Car Lease Allowance" in lieu of equivalent cash',
+      'Company signs lease directly with manufacturer/leasing firm (Mahindra Fleet, Orix, ALD, etc.)',
+      'Car ≤ 1600cc: ₹1,800/month perquisite (₹21,600/yr taxable). Car > 1600cc: ₹2,400/month (₹28,800/yr taxable)',
+      'Driver provided by company: add ₹900/month to perquisite value',
+      'Company deducts full lease rental as business expense + claims 28% GST input',
+      'After 3–4 years, buy the car at residual value (~15% of original price)',
+    ],
+    caution: 'Employer must be a registered company. Works best when CTC restructuring replaces cash component. EV leases also qualify for Section 80EEB — stack both for maximum benefit.'
+  },
 ];
 
 const DIFFICULTY_COLOR = { Easy: '#059669', Medium: '#D97706', Hard: '#DC2626' };
@@ -264,7 +283,7 @@ const LoopholesPage = () => {
   const [search, setSearch] = useState('');
   const [activeTag, setActiveTag] = useState('All');
 
-  const tags = ['All', 'Gift Tax', 'NRI', 'HUF', 'TDS', 'Capital Gains', 'Investment', 'Property', 'Startup', 'Profession', 'Business', 'Insurance', 'Amnesty'];
+  const tags = ['All', 'Gift Tax', 'NRI', 'HUF', 'TDS', 'Capital Gains', 'Investment', 'Property', 'Startup', 'Profession', 'Business', 'Insurance', 'Amnesty', 'Salary Structure'];
 
   const filtered = LOOPHOLES.filter(l => {
     const matchSearch = l.title.toLowerCase().includes(search.toLowerCase()) ||
