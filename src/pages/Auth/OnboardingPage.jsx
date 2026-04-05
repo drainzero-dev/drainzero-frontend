@@ -98,29 +98,46 @@ const OnboardingPage = () => {
       const isMetro = ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad']
         .some(c => values.city?.toLowerCase().includes(c.toLowerCase()));
 
-      // 1. Save user profile
-      const { error: userErr } = await withTimeout(
-        supabase.from('users').upsert({
-          id                  : user.id,
-          email               : user.email,
-          name                : values.name,
-          full_name           : values.name,
-          age                 : parseInt(values.age) || 0,
-          gender              : values.gender,
-          marital_status      : values.marital_status,
-          employment_type     : values.employment_type,
-          sector              : values.sector,
-          profession          : values.profession || '',
-          state               : values.state,
-          city                : values.city,
-          is_metro            : isMetro,
-          onboarding_done     : true,
-          onboarding_complete : true,
-          updated_at          : new Date().toISOString(),
-        }, { onConflict: 'id' })
+      // 1. Save user profile — handle email uniqueness constraint properly
+      // The trigger / ensurePublicUserRow may have already created the row.
+      // upsert with onConflict:'id' can still hit the email unique key if
+      // Postgres processes it as a new insert first. So: try update, then insert.
+      const profileData = {
+        email               : user.email,
+        name                : values.name,
+        full_name           : values.name,
+        age                 : parseInt(values.age) || 0,
+        gender              : values.gender,
+        marital_status      : values.marital_status,
+        employment_type     : values.employment_type,
+        sector              : values.sector,
+        profession          : values.profession || '',
+        state               : values.state,
+        city                : values.city,
+        is_metro            : isMetro,
+        onboarding_done     : true,
+        onboarding_complete : true,
+        updated_at          : new Date().toISOString(),
+      };
+
+      // Try updating existing row first (most common case after trigger created it)
+      const { data: updateData, error: updateErr } = await withTimeout(
+        supabase.from('users').update(profileData).eq('id', user.id).select('id').maybeSingle()
       );
 
-      if (userErr) throw new Error(`Could not save profile: ${userErr.message}`);
+      if (updateErr) throw new Error(`Could not save profile: ${updateErr.message}`);
+
+      // If update found no row (returned null), insert fresh
+      if (!updateData) {
+        const { error: insertErr } = await withTimeout(
+          supabase.from('users').insert({ id: user.id, ...profileData })
+        );
+        // 23505 = unique violation — row was inserted by another path between
+        // our update and insert, safe to ignore
+        if (insertErr && insertErr.code !== '23505') {
+          throw new Error(`Could not save profile: ${insertErr.message}`);
+        }
+      }
 
       // 2. Build + save income profile (non-fatal if it fails)
       const baseSalary = parseFloat(values.annualSalary) || 0;
