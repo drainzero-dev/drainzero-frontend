@@ -84,13 +84,6 @@ const OnboardingPage = () => {
     setLoading(true);
     setError('');
 
-    // Helper: Supabase call with a 10-second timeout so we never hang forever
-    const withTimeout = (promise, ms = 10000) =>
-      Promise.race([
-        promise,
-        new Promise((_, rej) => setTimeout(() => rej(new Error('Request timed out — check your connection')), ms)),
-      ]);
-
     try {
       if (!user) throw new Error('Not logged in. Please login again.');
 
@@ -98,10 +91,15 @@ const OnboardingPage = () => {
       const isMetro = ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad']
         .some(c => values.city?.toLowerCase().includes(c.toLowerCase()));
 
-      // 1. Save user profile — handle email uniqueness constraint properly
-      // The trigger / ensurePublicUserRow may have already created the row.
-      // upsert with onConflict:'id' can still hit the email unique key if
-      // Postgres processes it as a new insert first. So: try update, then insert.
+      // ── Mark context synchronously FIRST ─────────────────────────────────
+      // This is the only thing ProtectedRoute checks — the DB saves below
+      // happen in the background so slow Supabase connections never block UX.
+      markOnboardingDone();
+
+      // ── Navigate immediately — don't wait for DB ──────────────────────────
+      navigate('/dashboard', { replace: true });
+
+      // ── Fire-and-forget: save user profile in background ─────────────────
       const profileData = {
         email               : user.email,
         name                : values.name,
@@ -120,29 +118,24 @@ const OnboardingPage = () => {
         updated_at          : new Date().toISOString(),
       };
 
-      // Try updating existing row first (most common case after trigger created it)
-      const { data: updateData, error: updateErr } = await withTimeout(
-        supabase.from('users').update(profileData).eq('id', user.id).select('id').maybeSingle()
-      );
+      // Try update first (row already exists from trigger), then insert
+      supabase.from('users').update(profileData).eq('id', user.id)
+        .then(({ error: updateErr }) => {
+          if (updateErr) {
+            // Row might not exist yet — try insert
+            return supabase.from('users').insert({ id: user.id, ...profileData })
+              .then(({ error: insertErr }) => {
+                if (insertErr && insertErr.code !== '23505') {
+                  console.warn('[Onboarding] Profile save failed:', insertErr.message);
+                }
+              });
+          }
+        })
+        .catch(e => console.warn('[Onboarding] Profile save error:', e.message));
 
-      if (updateErr) throw new Error(`Could not save profile: ${updateErr.message}`);
-
-      // If update found no row (returned null), insert fresh
-      if (!updateData) {
-        const { error: insertErr } = await withTimeout(
-          supabase.from('users').insert({ id: user.id, ...profileData })
-        );
-        // 23505 = unique violation — row was inserted by another path between
-        // our update and insert, safe to ignore
-        if (insertErr && insertErr.code !== '23505') {
-          throw new Error(`Could not save profile: ${insertErr.message}`);
-        }
-      }
-
-      // 2. Build + save income profile (non-fatal if it fails)
+      // ── Fire-and-forget: save income profile in background ────────────────
       const baseSalary = parseFloat(values.annualSalary) || 0;
       const bonus      = isSalaried ? (parseFloat(values.bonus) || 0) : 0;
-      const hasCarLease = values.has_car_lease === true;
 
       const incomePayload = mapFormToProfile({
         annualSalary    : baseSalary,
@@ -156,31 +149,22 @@ const OnboardingPage = () => {
         is_metro        : isMetro,
       });
 
-      try {
-        await withTimeout(
-          supabase.from('income_profile')
-            .upsert({ user_id: user.id, ...incomePayload }, { onConflict: 'user_id' })
-        );
-      } catch (incErr) {
-        // Non-fatal — user can update income from ProfilePage
-        console.warn('[Onboarding] Income profile save failed:', incErr.message);
+      if (baseSalary > 0) {
+        markIncomeDataSaved();
+        supabase.from('income_profile')
+          .upsert({ user_id: user.id, ...incomePayload }, { onConflict: 'user_id' })
+          .catch(e => console.warn('[Onboarding] Income save error:', e.message));
       }
 
-      // 3. Mark state synchronously so ProtectedRoute sees it immediately
-      markOnboardingDone();
-      if (incomePayload.gross_salary > 0) markIncomeDataSaved();
-
-      // Background sync — don't await, don't block navigation
+      // Background refresh to fully sync userProfile in context
       refreshProfile().catch(() => {});
-
-      navigate('/dashboard', { replace: true });
 
     } catch (err) {
       console.error('[Onboarding] Submit error:', err);
       setError(err.message || 'Something went wrong. Please try again.');
-    } finally {
       setLoading(false);
     }
+    // Note: setLoading(false) not called in finally because we navigate away
   };
 
   // ─────────────────────────────────────────────
