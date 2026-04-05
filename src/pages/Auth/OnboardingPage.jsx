@@ -83,6 +83,14 @@ const OnboardingPage = () => {
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
+
+    // Helper: Supabase call with a 10-second timeout so we never hang forever
+    const withTimeout = (promise, ms = 10000) =>
+      Promise.race([
+        promise,
+        new Promise((_, rej) => setTimeout(() => rej(new Error('Request timed out — check your connection')), ms)),
+      ]);
+
     try {
       if (!user) throw new Error('Not logged in. Please login again.');
 
@@ -91,30 +99,33 @@ const OnboardingPage = () => {
         .some(c => values.city?.toLowerCase().includes(c.toLowerCase()));
 
       // 1. Save user profile
-      const { error: userErr } = await supabase.from('users').upsert({
-        id                 : user.id,
-        email              : user.email,
-        name               : values.name,
-        full_name          : values.name,
-        age                : parseInt(values.age) || 0,
-        gender             : values.gender,
-        marital_status     : values.marital_status,
-        employment_type    : values.employment_type,
-        sector             : values.sector,
-        profession         : values.profession || '',
-        state              : values.state,
-        city               : values.city,
-        is_metro           : isMetro,
-        onboarding_done    : true,
-        onboarding_complete: true,
-        updated_at         : new Date().toISOString(),
-      }, { onConflict: 'id' });
+      const { error: userErr } = await withTimeout(
+        supabase.from('users').upsert({
+          id                  : user.id,
+          email               : user.email,
+          name                : values.name,
+          full_name           : values.name,
+          age                 : parseInt(values.age) || 0,
+          gender              : values.gender,
+          marital_status      : values.marital_status,
+          employment_type     : values.employment_type,
+          sector              : values.sector,
+          profession          : values.profession || '',
+          state               : values.state,
+          city                : values.city,
+          is_metro            : isMetro,
+          onboarding_done     : true,
+          onboarding_complete : true,
+          updated_at          : new Date().toISOString(),
+        }, { onConflict: 'id' })
+      );
 
       if (userErr) throw new Error(`Could not save profile: ${userErr.message}`);
 
-      // 2. Build + save income profile
+      // 2. Build + save income profile (non-fatal if it fails)
       const baseSalary = parseFloat(values.annualSalary) || 0;
       const bonus      = isSalaried ? (parseFloat(values.bonus) || 0) : 0;
+      const hasCarLease = values.has_car_lease === true;
 
       const incomePayload = mapFormToProfile({
         annualSalary    : baseSalary,
@@ -128,29 +139,23 @@ const OnboardingPage = () => {
         is_metro        : isMetro,
       });
 
-      const { error: incErr } = await supabase
-        .from('income_profile')
-        .upsert({ user_id: user.id, ...incomePayload }, { onConflict: 'user_id' });
-
-      if (incErr) {
-        // Non-fatal — user profile saved, income can be updated from ProfilePage
-        console.error('[Onboarding] Income profile error:', incErr.message);
+      try {
+        await withTimeout(
+          supabase.from('income_profile')
+            .upsert({ user_id: user.id, ...incomePayload }, { onConflict: 'user_id' })
+        );
+      } catch (incErr) {
+        // Non-fatal — user can update income from ProfilePage
+        console.warn('[Onboarding] Income profile save failed:', incErr.message);
       }
 
-      // FIX (Bug A): Update auth context state SYNCHRONOUSLY before navigating.
-      // refreshProfile() does a DB round-trip and schedules a React state update —
-      // by the time navigate() fires, ProtectedRoute may still see onboardingDone=false
-      // and redirect back here, creating an infinite loop.
-      // markOnboardingDone() sets state in the same render cycle, so ProtectedRoute
-      // sees onboardingDone=true the moment the new route mounts.
+      // 3. Mark state synchronously so ProtectedRoute sees it immediately
       markOnboardingDone();
       if (incomePayload.gross_salary > 0) markIncomeDataSaved();
 
-      // Kick off a background refresh so userProfile and hasIncomeData fully sync
+      // Background sync — don't await, don't block navigation
       refreshProfile().catch(() => {});
 
-      // Navigate to dashboard (safer than category-selection — dashboard has its
-      // own "Start Analysis" CTA and doesn't depend on any prior form state)
       navigate('/dashboard', { replace: true });
 
     } catch (err) {
@@ -230,6 +235,50 @@ const OnboardingPage = () => {
         label={<Text style={labelStyle}>Job Title / Profession <span style={{ color: '#6B7280', fontWeight: 400 }}>(Optional)</span></Text>}>
         <Input style={inputStyle} placeholder="e.g. Software Engineer, CA, Teacher" />
       </Form.Item>
+
+      {/* Car Lease question — shown only for Salaried / Government */}
+      {isSalaried && (
+        <Form.Item
+          name="has_car_lease"
+          label={
+            <span>
+              <Text style={labelStyle}>Does your employer offer a Car Lease Allowance?</Text>
+              <br />
+              <Text style={{ color: '#6B7280', fontSize: 12, fontWeight: 400 }}>
+                Company leases = only ₹22K–₹29K/year taxable instead of full lease cost. Saves ₹60K–₹3L/year.
+              </Text>
+            </span>
+          }
+          initialValue={false}
+        >
+          <Radio.Group buttonStyle="solid" size="large">
+            <Radio.Button value={true}>Yes, I have / can get one</Radio.Button>
+            <Radio.Button value={false}>No</Radio.Button>
+          </Radio.Group>
+        </Form.Item>
+      )}
+
+      {/* Business owner vehicle question */}
+      {(empType === 'Business Owner' || empType === 'Self-Employed') && (
+        <Form.Item
+          name="has_business_vehicle"
+          label={
+            <span>
+              <Text style={labelStyle}>Do you use a vehicle for business?</Text>
+              <br />
+              <Text style={{ color: '#6B7280', fontSize: 12, fontWeight: 400 }}>
+                Enables vehicle depreciation (15–30%) and fuel/maintenance deductions under business expenses.
+              </Text>
+            </span>
+          }
+          initialValue={false}
+        >
+          <Radio.Group buttonStyle="solid" size="large">
+            <Radio.Button value={true}>Yes</Radio.Button>
+            <Radio.Button value={false}>No</Radio.Button>
+          </Radio.Group>
+        </Form.Item>
+      )}
     </Space>
   );
 
