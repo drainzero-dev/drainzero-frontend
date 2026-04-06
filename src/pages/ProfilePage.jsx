@@ -96,25 +96,28 @@ const ProfilePage = () => {
       const isMetro = ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad'].some(
         c => values.city?.toLowerCase().includes(c.toLowerCase())
       );
-      const { error: err } = await supabase.from('users').upsert({
-        id              : user.id,
-        email           : user.email,
-        name            : values.name,
-        age             : parseInt(values.age) || 0,
-        gender          : values.gender,
-        marital_status  : values.marital_status,
-        employment_type : values.employment_type,
-        sector          : values.sector,
-        profession      : values.profession || '',
-        state           : values.state,
-        city            : values.city,
-        is_metro        : isMetro,
-        onboarding_done : true,
-        updated_at      : new Date().toISOString(),
-      }, { onConflict: 'id' });
+      // FIX: use UPDATE (not upsert) to avoid users_email_key unique constraint.
+      // The row already exists from ensurePublicUserRow — we just update it.
+      const { error: err } = await supabase.from('users').update({
+        name               : values.name,
+        full_name          : values.name,
+        age                : parseInt(values.age) || 0,
+        gender             : values.gender,
+        marital_status     : values.marital_status,
+        employment_type    : values.employment_type,
+        sector             : values.sector,
+        profession         : values.profession || '',
+        state              : values.state,
+        city               : values.city,
+        is_metro           : isMetro,
+        onboarding_done    : true,
+        onboarding_complete: true,
+        updated_at         : new Date().toISOString(),
+      }).eq('id', user.id);
       if (err) throw new Error(err.message);
-      await refreshProfile();
-      message.success('Personal details saved!');
+      // FIX: do NOT call refreshProfile() — it re-reads DB and can overwrite
+      // onboardingDone=true with false if propagation is delayed.
+      message.success('✅ Personal details saved!');
     } catch (err) {
       setError(err.message);
     } finally {
