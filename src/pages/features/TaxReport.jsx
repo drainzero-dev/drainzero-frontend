@@ -45,7 +45,8 @@ const TaxReport = () => {
 
   const taxOld  = backendResult?.oldRegime?.totalTax ?? (taxableOld<=500000?0:Math.round(calcOld(taxableOld)*1.04));
   const taxNew  = backendResult?.newRegime?.totalTax ?? (taxableNew<=1200000?0:Math.round(calcNew(taxableNew)*1.04));
-  const better  = taxOld <= taxNew ? 'Old Regime' : 'New Regime';
+  // FIX: when new=0 and old>0, new regime clearly wins
+  const better  = taxNew < taxOld ? 'New Regime' : taxOld < taxNew ? 'Old Regime' : 'New Regime';
   const saving  = Math.abs(taxOld - taxNew);
   // Real health score from backend, or compute from form data, never fake
   const computeLocalHealth = () => {

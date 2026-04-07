@@ -104,9 +104,10 @@ const Dashboard = () => {
                     </Card>
                   </Col>
                   <Col xs={24} sm={12} md={6}>
-                    <Card style={{ borderRadius: 20, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', textAlign: 'center' }}>
+                    <Card style={{ borderRadius: 20, border: newTax === 0 ? '2px solid #10B981' : 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', background: newTax === 0 ? '#F0FDF4' : '#FFFFFF', textAlign: 'center' }}>
                       <Text style={{ display: 'block', fontSize: 12, color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>New Regime Tax</Text>
-                      <div style={{ fontSize: 28, fontWeight: 800, color: '#3B82F6' }}>₹{fmt(newTax)}</div>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: newTax === 0 ? '#10B981' : '#3B82F6' }}>₹{fmt(newTax)}</div>
+                      {newTax === 0 && <Text style={{ fontSize: 11, color: '#059669', display: 'block', marginTop: 4, fontWeight: 600 }}>87A Rebate Applied ✓</Text>}
                     </Card>
                   </Col>
                   <Col xs={24} sm={12} md={6}>

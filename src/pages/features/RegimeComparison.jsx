@@ -33,6 +33,13 @@ const RegimeComparison = () => {
 
     // ── If backend result available, use it directly ──
     const hasBackend = backendResult?.success && backendResult?.oldRegime && backendResult?.newRegime;
+    // Extract slab tax and rebate from backend if available
+    const bSlabOld   = hasBackend ? (backendResult.oldRegime.slabTax ?? backendResult.oldRegime.baseTax) : 0;
+    const bSlabNew   = hasBackend ? (backendResult.newRegime.slabTax ?? backendResult.newRegime.baseTax) : 0;
+    const bRebateOld = hasBackend ? (backendResult.oldRegime.rebate87A ?? 0) : 0;
+    const bRebateNew = hasBackend ? (backendResult.newRegime.rebate87A ?? 0) : 0;
+    const bCessOld   = hasBackend ? (backendResult.oldRegime.cess ?? 0) : 0;
+    const bCessNew   = hasBackend ? (backendResult.newRegime.cess ?? 0) : 0;
     const bFinalOld  = hasBackend ? (backendResult.oldRegime.totalTax || 0) : null;
     const bFinalNew  = hasBackend ? (backendResult.newRegime.totalTax || 0) : null;
     const bSavings   = hasBackend ? (backendResult.saving || Math.abs(bFinalOld - bFinalNew)) : null;
@@ -185,9 +192,11 @@ const RegimeComparison = () => {
         { key: 3, label: 'Traditional Deductions (80C, 80D, HRA etc.)', old: d80C + d80D + dNPS + dHRA, new: 0 },
         { key: 4, label: `Asset Specific Benefits (${category})`, old: vehicleBenefitOld + propertyBenefitOld, new: vehicleBenefitNew },
         { key: 5, label: 'Taxable Slab Income', old: taxableIncomeOld, new: taxableIncomeNew },
-        { key: 6, label: 'Slab Tax (Before CESS)', old: taxOld, new: taxNew },
-        { key: 7, label: 'Capital Gains / VDA Tax', old: capitalGainsTax, new: capitalGainsTax },
-        { key: 8, label: 'Total Tax Payable (Final)', old: finalTaxOld, new: finalTaxNew },
+        { key: 6, label: 'Slab Tax (Before Rebate & Cess)', old: hasBackend ? bSlabOld : taxOld, new: hasBackend ? bSlabNew : taxNew },
+        { key: 7, label: 'Section 87A Rebate (Budget 2025)', old: hasBackend ? -bRebateOld : (taxableIncomeOld <= 500000 ? -Math.min(taxOld, 12500) : 0), new: hasBackend ? -bRebateNew : (taxableIncomeNew <= 1200000 ? -(hasBackend ? bSlabNew : taxNew) : 0) },
+        { key: 8, label: '4% Health & Education Cess', old: hasBackend ? bCessOld : 0, new: hasBackend ? bCessNew : 0 },
+        { key: 9, label: 'Capital Gains / VDA Tax', old: capitalGainsTax, new: capitalGainsTax },
+        { key: 10, label: 'Total Tax Payable (Final)', old: finalTaxOld, new: finalTaxNew },
     ];
 
     return (
@@ -224,13 +233,14 @@ const RegimeComparison = () => {
                     <Row gutter={[24, 24]} style={{ marginBottom: '40px' }}>
                         <Col xs={24} md={8}>
                             <Card style={{ borderRadius: '24px', textAlign: 'center', height: '100%', border: 'none' }}>
-                                <Statistic title="Old Regime Tax" value={taxOld} prefix="₹" precision={0} valueStyle={{ color: '#6B7280' }} />
+                                <Statistic title="Old Regime Tax (incl. 4% cess)" value={Math.round(finalTaxOld)} prefix="₹" precision={0} valueStyle={{ color: '#6B7280' }} />
                             </Card>
                         </Col>
                         <Col xs={24} md={8}>
                             <Card style={{ borderRadius: '24px', textAlign: 'center', height: '100%', border: '2px solid #5B92E5', background: '#EEF3F9' }}>
-                                <Statistic title="New Regime Tax" value={taxNew} prefix="₹" precision={0} valueStyle={{ color: '#5B92E5', fontWeight: 800 }} />
-                                {bestRegime === 'New Regime' && <Tag color="blue" style={{ marginTop: '8px', borderRadius: '4px' }}>Recommended</Tag>}
+                                <Statistic title="New Regime Tax (incl. 4% cess)" value={Math.round(finalTaxNew)} prefix="₹" precision={0} valueStyle={{ color: '#5B92E5', fontWeight: 800 }} />
+                                {finalTaxNew === 0 && <Tag color="green" style={{ marginTop: '8px', borderRadius: '4px' }}>₹0 Tax — 87A Rebate Applied</Tag>}
+                                {bestRegime === 'New Regime' && finalTaxNew > 0 && <Tag color="blue" style={{ marginTop: '8px', borderRadius: '4px' }}>Recommended</Tag>}
                             </Card>
                         </Col>
                         <Col xs={24} md={8}>
@@ -249,9 +259,24 @@ const RegimeComparison = () => {
                         </Col>
                     </Row>
 
-                    {savings === 0 && (
+                    {savings === 0 && finalTaxNew === 0 && finalTaxOld === 0 && (
                         <Alert
-                            message="Both regimes result in zero tax for your current income level. You can choose either."
+                            message="Both regimes result in zero tax. Your income is within full rebate limits."
+                            type="success"
+                            showIcon
+                            style={{ marginBottom: '24px', borderRadius: '16px' }}
+                        />
+                    )}
+                    {finalTaxNew === 0 && finalTaxOld > 0 && (
+                        <Alert
+                            icon={<CheckCircleFilled />}
+                            message={
+                                <span>
+                                    <strong>New Regime wins — ₹0 tax on your income!</strong>{' '}
+                                    Budget 2025 Section 87A rebate applies: taxable income ₹{Math.round(taxableIncomeNew).toLocaleString()} is within the ₹12L rebate limit,
+                                    making your entire new-regime tax liability zero. Switch to New Regime and save ₹{Math.round(finalTaxOld).toLocaleString()} vs Old Regime.
+                                </span>
+                            }
                             type="success"
                             showIcon
                             style={{ marginBottom: '24px', borderRadius: '16px' }}
