@@ -124,7 +124,7 @@ const MessageBubble = ({ msg, onActionCard }) => (
 const TaxAssistantChatbot = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState([
-    { role: 'bot', text: 'Hi! I am your AI Tax Assistant powered by DrainZero + Gemini.\n\nI know your income, deductions, and profile. Ask me anything about your taxes.' }
+    { role: 'bot', text: 'Hi! I am your DrainZero AI Tax Assistant.\n\nI know your income, deductions, and profile. Ask me anything about your taxes.' }
   ]);
   const [inputValue, setInputValue]   = useState('');
   const [loading, setLoading]         = useState(false);
@@ -207,7 +207,7 @@ const TaxAssistantChatbot = () => {
                 }} />
               </span>
               <span style={{ color: '#CCF1FF', fontSize: 11, fontFamily: "'Outfit', sans-serif" }}>
-                Powered by Gemini · RAG Enabled
+                Powered by DrainZero AI · RAG Enabled
               </span>
             </div>
           </div>

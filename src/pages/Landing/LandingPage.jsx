@@ -15,7 +15,7 @@ const FEATURES = [
   { title: 'Tax Health Score', desc: 'A score out of 100 showing how optimized your tax planning is.', icon: <LineChartOutlined />, color: '#10B981' },
   { title: 'AI Tax Assistant', desc: 'Ask anything — the AI knows your income, deductions and profile. Like a personal CA.', icon: <ThunderboltFilled />, color: '#7C3AED' },
   { title: 'Legal Loopholes', desc: '15 legally bulletproof strategies — HUF, RNOR, LTCG harvesting, corporate car lease and more.', icon: <BulbOutlined />, color: '#D97706' },
-  { title: 'Document Upload', desc: 'Upload Form 16 or AIS — Gemini Vision reads it and fills your profile automatically.', icon: <FileTextOutlined />, color: '#0891B2' },
+  { title: 'Document Upload', desc: 'Upload Form 16 or AIS — AI reads it and fills your profile automatically.', icon: <FileTextOutlined />, color: '#0891B2' },
   { title: 'What-If Simulator', desc: 'Drag sliders to see live tax impact. No other free tool has this.', icon: <WalletOutlined />, color: '#059669' },
   { title: '50+ Deductions Explorer', desc: 'Every tax section — 80C to 112A — with your personal claim status.', icon: <CheckCircleOutlined />, color: '#EF4444' },
 ];
@@ -185,7 +185,7 @@ const LandingPage = () => {
               DrainZero is a <strong>Personal Fiscal Optimization Engine</strong> built for Indian middle-income taxpayers. With the New Tax Regime simplifying deductions, many taxpayers suffer from "benefit blindness" — assuming there's nothing to optimize.
             </Paragraph>
             <Paragraph style={{ color: '#6B7280', fontSize: 16, lineHeight: 1.8, marginBottom: 16 }}>
-              DrainZero changes that. It uses <strong>AI (Gemini)</strong>, a <strong>RAG knowledge base</strong> of 63 verified Indian tax law entries, and <strong>semantic search</strong> to give you answers that feel like talking to a CA — but free, instant, and available 24/7.
+              DrainZero changes that. It uses <strong>AI</strong>, a <strong>RAG knowledge base</strong> of 63 verified Indian tax law entries, and <strong>semantic search</strong> to give you answers that feel like talking to a CA — but free, instant, and available 24/7.
             </Paragraph>
             <Paragraph style={{ color: '#6B7280', fontSize: 16, lineHeight: 1.8 }}>
               It's not a filing tool. It's a <strong>diagnostic and advisory tool</strong> — helping you understand where your tax money is going and what you can legally do about it.

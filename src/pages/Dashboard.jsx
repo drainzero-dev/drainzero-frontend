@@ -26,11 +26,12 @@ const Dashboard = () => {
   const { category, subcategory, ownership, formData, backendResult } = state;
 
   // ── Real results from backend — no mock values ──
-  const hasResult = backendResult?.success && backendResult?.oldRegime && backendResult?.newRegime;
-  const oldTax    = hasResult ? (backendResult.oldRegime?.totalTax  || 0) : null;
-  const newTax    = hasResult ? (backendResult.newRegime?.totalTax  || 0) : null;
-  const savings   = hasResult ? (backendResult.saving ?? Math.abs((oldTax || 0) - (newTax || 0))) : null;
-  const regime    = hasResult ? backendResult.recommendedRegime : null;
+  const hasResult        = backendResult?.success && backendResult?.oldRegime && backendResult?.newRegime;
+  const oldTax           = hasResult ? (backendResult.oldRegime?.totalTax  || 0) : null;
+  const newTax           = hasResult ? (backendResult.newRegime?.totalTax  || 0) : null;
+  const savings          = hasResult ? (backendResult.saving ?? Math.abs((oldTax || 0) - (newTax || 0))) : null;
+  const regime           = hasResult ? backendResult.recommendedRegime : null;
+  const newRegimeZeroReason = hasResult ? backendResult.validation?.newRegimeZeroReason : null;
   const score     = hasResult ? backendResult.healthScore : null;
   const leakage   = hasResult ? (backendResult.totalLeakage || 0) : null;
 
@@ -107,7 +108,18 @@ const Dashboard = () => {
                     <Card style={{ borderRadius: 20, border: newTax === 0 ? '2px solid #10B981' : 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', background: newTax === 0 ? '#F0FDF4' : '#FFFFFF', textAlign: 'center' }}>
                       <Text style={{ display: 'block', fontSize: 12, color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>New Regime Tax</Text>
                       <div style={{ fontSize: 28, fontWeight: 800, color: newTax === 0 ? '#10B981' : '#3B82F6' }}>₹{fmt(newTax)}</div>
-                      {newTax === 0 && <Text style={{ fontSize: 11, color: '#059669', display: 'block', marginTop: 4, fontWeight: 600 }}>87A Rebate Applied ✓</Text>}
+                      {newTax === 0 && (
+                        <div>
+                          <Text style={{ fontSize: 11, color: '#059669', display: 'block', marginTop: 4, fontWeight: 600 }}>
+                            87A Rebate Applied ✓
+                          </Text>
+                          {newRegimeZeroReason && (
+                            <Text style={{ fontSize: 10, color: '#6B7280', display: 'block', marginTop: 2 }}>
+                              {newRegimeZeroReason}
+                            </Text>
+                          )}
+                        </div>
+                      )}
                     </Card>
                   </Col>
                   <Col xs={24} sm={12} md={6}>
