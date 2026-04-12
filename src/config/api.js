@@ -42,6 +42,8 @@ const apiFetch = async (endpoint, method = 'GET', body = null, timeoutMs = 30000
 };
 
 export const analyseProfile  = (userId)          => apiFetch('/api/analyse', 'POST', { userId });
+export const analyseProfileWithCategory = (userId, category, subcategory, formData) =>
+  apiFetch('/api/analyse', 'POST', { userId, category, subcategory, formData });
 export const getLoopholes    = (userId)          => apiFetch(`/api/loopholes?userId=${userId}`);
 export const getBenefits     = (userId)          => apiFetch(`/api/benefits?userId=${userId}`);
 export const askAgent        = (userId, message) => apiFetch('/api/agent', 'POST', { userId, message }, 35000);

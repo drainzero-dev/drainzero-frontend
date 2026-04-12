@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────
 
 import { supabase }      from '../config/supabase';
-import { analyseProfile } from '../config/api';
+import { analyseProfile, analyseProfileWithCategory } from '../config/api';
 
 // Statutory caps — FY 2025-26
 const CAP_80C = 150000;
@@ -78,7 +78,8 @@ export const runFullAnalysis = async (userId, email, formData, category, subcate
   if (!userId) throw new Error('Not authenticated');
   const profile = mapFormToProfile(formData);
   await saveIncomeProfile(userId, profile);
-  const result = await analyseProfile(userId);
+  // Pass category-specific form data so backend can compute crypto/F&O/property tax correctly
+  const result = await analyseProfileWithCategory(userId, category, subcategory, formData);
   return result;
 };
 
